@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuiz } from "../context/QuizContext";
-import { Sparkles, FileText, Settings, Loader2 } from "lucide-react";
+import { Sparkles, FileText, Settings, Loader2, Image } from "lucide-react";
+import Tesseract from 'tesseract.js';
 
 const API_BASE = process.env.REACT_APP_API_URL || "";
 
@@ -12,15 +13,39 @@ const QuizGenerator = () => {
   const [multipleCorrect, setMultipleCorrect] = useState("");
   const [numOptions, setNumOptions] = useState("");
   const [loading, setLoading] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
   const navigate = useNavigate();
   const { setQuizData } = useQuiz();
+
+  // Handle image upload and OCR
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setImageLoading(true);
+    try {
+      const { data: { text } } = await Tesseract.recognize(
+        file,
+        'eng',
+        {
+          logger: (m) => console.log(m),
+        }
+      );
+      setInputText((prev) => prev ? `${prev}\n\n${text}` : text);
+    } catch (error) {
+      console.error("Error extracting text from image:", error);
+      alert("Failed to extract text from image. Please try another image.");
+    } finally {
+      setImageLoading(false);
+    }
+  };
 
   const handleGenerate = async () => {
     setLoading(true);
     try {
       // Validate inputs before sending
       if (!inputText.trim()) {
-        throw new Error('Please enter some content to generate questions from');
+        throw new Error('Please enter some content or upload an image to generate questions from');
       }
 
       const total = parseInt(totalQuestions);
@@ -28,12 +53,22 @@ const QuizGenerator = () => {
       const multiple = parseInt(multipleCorrect);
       const options = parseInt(numOptions);
 
-      if (single + multiple !== total) {
-        throw new Error('Single + Multiple correct questions must equal Total questions');
+      // Check for invalid numbers
+      if (isNaN(total) || total < 1) {
+        throw new Error('Total questions must be a number greater than 0');
+      }
+      if (isNaN(single) || single < 0) {
+        throw new Error('Single correct questions must be a number greater than or equal to 0');
+      }
+      if (isNaN(multiple) || multiple < 0) {
+        throw new Error('Multiple correct questions must be a number greater than or equal to 0');
+      }
+      if (isNaN(options) || options < 2) {
+        throw new Error('Options per question must be a number greater than or equal to 2');
       }
 
-      if (options < 2) {
-        throw new Error('Must have at least 2 options per question');
+      if (single + multiple !== total) {
+        throw new Error('Single + Multiple correct questions must equal Total questions');
       }
 
       console.log('Sending request to:', `${API_BASE}/api/quiz/generate`);
@@ -45,22 +80,20 @@ const QuizGenerator = () => {
           "Accept": "application/json"
         },
         body: JSON.stringify({
-          content: inputText.trim(),           // Changed from prompt
-          totalQuestions: total,               // Changed from numQuestions
+          content: inputText.trim(),
+          totalQuestions: total,
           singleCorrect: single,
           multipleCorrect: multiple,
-          optionsPerQuestion: options          // Changed from numOptions
+          optionsPerQuestion: options
         }),
       });
 
-      // First check if response is ok
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Server error response:', errorText);
         throw new Error(`Server error (${response.status}): ${errorText}`);
       }
 
-      // Then try to parse JSON
       const data = await response.json();
       console.log('Received data:', data);
 
@@ -90,7 +123,7 @@ const QuizGenerator = () => {
             <Sparkles className="text-pink-500" /> Generate Your AI Quiz
           </h2>
           <p className="text-gray-600 mt-2 text-lg">
-            Paste your content below and customize your quiz. Instantly create questions using AI!
+            Paste your content or upload an image to generate questions using AI!
           </p>
         </div>
 
@@ -108,11 +141,28 @@ const QuizGenerator = () => {
             <textarea
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
               rows={4}
-              placeholder="Paste your content here..."
+              placeholder="Paste your content here or upload an image below..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              required
             />
+          </div>
+
+          <div>
+            <label className="flex items-center gap-2 text-gray-700 font-semibold mb-1">
+              <Image size={18} /> Upload Image (Optional)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+              disabled={imageLoading}
+            />
+            {imageLoading && (
+              <p className="text-gray-600 mt-2 flex items-center gap-2">
+                <Loader2 className="animate-spin" size={18} /> Extracting text from image...
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -161,7 +211,7 @@ const QuizGenerator = () => {
           <button
             type="submit"
             className="w-full bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 text-white font-bold py-3 rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-all duration-200 flex justify-center items-center text-lg"
-            disabled={loading}
+            disabled={loading || imageLoading}
           >
             {loading ? (
               <>

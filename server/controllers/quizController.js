@@ -5,7 +5,17 @@ const generateQuiz = async (req, res) => {
     const { content, totalQuestions, singleCorrect, multipleCorrect, optionsPerQuestion } = req.body;
 
     // Input validation
-    if (!content?.trim() || !totalQuestions || !singleCorrect || !multipleCorrect || !optionsPerQuestion) {
+    if (
+      !content?.trim() ||
+      totalQuestions === undefined ||
+      totalQuestions === null ||
+      singleCorrect === undefined ||
+      singleCorrect === null ||
+      multipleCorrect === undefined ||
+      multipleCorrect === null ||
+      optionsPerQuestion === undefined ||
+      optionsPerQuestion === null
+    ) {
       return res.status(400).json({ error: "Missing or invalid input fields" });
     }
 
@@ -51,7 +61,7 @@ Generate the quiz now:`;
     while (attempt < maxAttempts && quizArray.length !== totalQuestions) {
       try {
         const response = await axios.post(
-          "https://api.together.xyz/v1/chat/completions", // Changed to chat completions endpoint for JSON mode
+          "https://api.together.xyz/v1/chat/completions",
           {
             model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
             messages: [
@@ -79,7 +89,7 @@ Generate the quiz now:`;
         );
 
         const text = response.data.choices[0].message.content;
-        console.log('Raw AI Response:', text); // Debug log
+        console.log('Raw AI Response:', text);
         
         // Parse JSON response directly
         quizArray = JSON.parse(text);

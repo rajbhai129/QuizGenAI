@@ -7,6 +7,8 @@ import QuizGenerator from './components/QuizGenerator';
 import { QuizProvider } from "./context/QuizContext";
 import QuizTaking from './components/QuizTaking';
 import QuizResult from './components/QuizResult';
+import About from './components/About';
+
 function App() {
   return (
     <QuizProvider>
@@ -19,6 +21,7 @@ function App() {
               <Route path="/create" element={<QuizGenerator />} />
               <Route path="/take" element={<QuizTaking />} />
               <Route path="/result" element={<QuizResult />} />
+              <Route path="/about" element={<About />} />
             </Routes>
           </main>
           <Footer />
