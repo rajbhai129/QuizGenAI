@@ -1,8 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuiz } from "../context/QuizContext";
-import { Sparkles, FileText, Settings, Loader2, Image } from "lucide-react";
+import { Sparkles, FileText, Settings, Loader2, Image, File, Paperclip } from "lucide-react";
 import Tesseract from 'tesseract.js';
+import { GlobalWorkerOptions } from "pdfjs-dist";
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configure PDF.js worker
+GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
 
 const API_BASE = process.env.REACT_APP_API_URL || "";
 
@@ -14,8 +22,27 @@ const QuizGenerator = () => {
   const [numOptions, setNumOptions] = useState("");
   const [loading, setLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false); // For attach dropdown
+  const imageInputRef = useRef(null);
+  const pdfInputRef = useRef(null);
+  const dropdownRef = useRef(null); // Add this new ref
   const navigate = useNavigate();
   const { setQuizData } = useQuiz();
+
+  // Add useEffect for click outside listener
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Handle image upload and OCR
   const handleImageUpload = async (e) => {
@@ -40,12 +67,55 @@ const QuizGenerator = () => {
     }
   };
 
+  // Handle PDF upload and text extraction
+  const handlePdfUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setPdfLoading(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+      let extractedText = '';
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        extractedText += pageText + '\n';
+      }
+
+      setInputText((prev) => prev ? `${prev}\n\n${extractedText}` : extractedText);
+    } catch (error) {
+      console.error("Error extracting text from PDF:", error);
+      alert("Failed to extract text from PDF. Please try another PDF.");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  // Toggle dropdown for attach options
+  const toggleDropdown = () => {
+    setShowDropdown((prev) => !prev);
+  };
+
+  // Trigger file input for image
+  const triggerImageUpload = () => {
+    imageInputRef.current.click();
+    setShowDropdown(false);
+  };
+
+  // Trigger file input for PDF
+  const triggerPdfUpload = () => {
+    pdfInputRef.current.click();
+    setShowDropdown(false);
+  };
+
   const handleGenerate = async () => {
     setLoading(true);
     try {
-      // Validate inputs before sending
       if (!inputText.trim()) {
-        throw new Error('Please enter some content or upload an image to generate questions from');
+        throw new Error('Please enter some content, upload an image, or upload a PDF to generate questions from');
       }
 
       const total = parseInt(totalQuestions);
@@ -53,7 +123,6 @@ const QuizGenerator = () => {
       const multiple = parseInt(multipleCorrect);
       const options = parseInt(numOptions);
 
-      // Check for invalid numbers
       if (isNaN(total) || total < 1) {
         throw new Error('Total questions must be a number greater than 0');
       }
@@ -123,7 +192,7 @@ const QuizGenerator = () => {
             <Sparkles className="text-pink-500" /> Generate Your AI Quiz
           </h2>
           <p className="text-gray-600 mt-2 text-lg">
-            Paste your content or upload an image to generate questions using AI!
+            Paste your content, upload an image, or upload a PDF to generate questions using AI!
           </p>
         </div>
 
@@ -138,29 +207,64 @@ const QuizGenerator = () => {
             <label className="flex items-center gap-2 text-gray-700 font-semibold mb-1">
               <FileText size={18} /> Source Content
             </label>
-            <textarea
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-              rows={4}
-              placeholder="Paste your content here or upload an image below..."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="flex items-center gap-2 text-gray-700 font-semibold mb-1">
-              <Image size={18} /> Upload Image (Optional)
-            </label>
+            <div className="relative">
+              <textarea
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition pr-12"
+                rows={4}
+                placeholder="Paste your content here, or attach an image/PDF..."
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={toggleDropdown}
+                className="absolute right-2 top-2 text-gray-600 hover:text-blue-500 transition"
+              >
+                <Paperclip size={20} />
+              </button>
+              {showDropdown && (
+                <div 
+                  ref={dropdownRef} // Add this ref to the dropdown
+                  className="absolute right-2 top-10 bg-white border border-gray-300 rounded-lg shadow-lg z-10"
+                >
+                  <button
+                    type="button"
+                    onClick={triggerImageUpload}
+                    className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 w-full text-left"
+                  >
+                    <Image size={16} /> Upload Image
+                  </button>
+                  <button
+                    type="button"
+                    onClick={triggerPdfUpload}
+                    className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 w-full text-left"
+                  >
+                    <File size={16} /> Upload PDF
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* Hidden file inputs */}
             <input
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-              disabled={imageLoading}
+              ref={imageInputRef}
+              className="hidden"
+              disabled={imageLoading || pdfLoading}
             />
-            {imageLoading && (
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={handlePdfUpload}
+              ref={pdfInputRef}
+              className="hidden"
+              disabled={imageLoading || pdfLoading}
+            />
+            {(imageLoading || pdfLoading) && (
               <p className="text-gray-600 mt-2 flex items-center gap-2">
-                <Loader2 className="animate-spin" size={18} /> Extracting text from image...
+                <Loader2 className="animate-spin" size={18} />
+                {imageLoading ? "Extracting text from image..." : "Extracting text from PDF..."}
               </p>
             )}
           </div>
@@ -211,7 +315,7 @@ const QuizGenerator = () => {
           <button
             type="submit"
             className="w-full bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 text-white font-bold py-3 rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-all duration-200 flex justify-center items-center text-lg"
-            disabled={loading || imageLoading}
+            disabled={loading || imageLoading || pdfLoading}
           >
             {loading ? (
               <>
