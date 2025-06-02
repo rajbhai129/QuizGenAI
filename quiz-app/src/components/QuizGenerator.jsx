@@ -3,14 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useQuiz } from "../context/QuizContext";
 import { Sparkles, FileText, Settings, Loader2, Image, File, Paperclip } from "lucide-react";
 import Tesseract from 'tesseract.js';
-import { GlobalWorkerOptions } from "pdfjs-dist";
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure PDF.js worker
-GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
+// Configure PDF.js worker - Fix for Vercel deployment
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const API_BASE = process.env.REACT_APP_API_URL || "";
 
