@@ -1,12 +1,13 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuiz } from "../context/QuizContext";
 import { Sparkles, FileText, Settings, Loader2, Image, File, Paperclip } from "lucide-react";
 import Tesseract from 'tesseract.js';
+import { GlobalWorkerOptions } from "pdfjs-dist";
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure PDF.js worker - Fix for Vercel deployment
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure PDF.js worker to load from public folder
+GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 const API_BASE = process.env.REACT_APP_API_URL || "";
 
@@ -19,26 +20,11 @@ const QuizGenerator = () => {
   const [loading, setLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false); // For attach dropdown
+  const [showDropdown, setShowDropdown] = useState(false);
   const imageInputRef = useRef(null);
   const pdfInputRef = useRef(null);
-  const dropdownRef = useRef(null); // Add this new ref
   const navigate = useNavigate();
   const { setQuizData } = useQuiz();
-
-  // Add useEffect for click outside listener
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   // Handle image upload and OCR
   const handleImageUpload = async (e) => {
@@ -219,10 +205,7 @@ const QuizGenerator = () => {
                 <Paperclip size={20} />
               </button>
               {showDropdown && (
-                <div 
-                  ref={dropdownRef} // Add this ref to the dropdown
-                  className="absolute right-2 top-10 bg-white border border-gray-300 rounded-lg shadow-lg z-10"
-                >
+                <div className="absolute right-2 top-10 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
                   <button
                     type="button"
                     onClick={triggerImageUpload}
