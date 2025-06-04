@@ -7,19 +7,21 @@ const { extractPdf } = require('./controllers/pdfController');
 dotenv.config();
 const app = express();
 
-// Configure CORS (restrict origins in production)
+// Increase payload size limits BEFORE other middleware
+app.use(express.json({ limit: '50mb', extended: true }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Configure CORS
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://quiz-gen-ai-raj.vercel.app/']
+    ? ['https://quiz-gen-ai-sooty.vercel.app']
     : '*',
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type'],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 };
 
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Health check endpoint
 app.get('/', (req, res) => {
@@ -30,19 +32,17 @@ app.get('/', (req, res) => {
 app.post('/api/quiz/generate', generateQuiz);
 app.post('/api/extract-pdf', extractPdf);
 
-// Handle 404
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    details: `The requested route '${req.originalUrl}' does not exist`
-  });
-});
-
-// Error handling
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err);
+  console.error('Server Error:', err);
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      error: 'File too large',
+      details: 'Maximum file size is 50MB'
+    });
+  }
   res.status(500).json({
-    error: 'Internal Server Error',
+    error: 'Internal server error',
     details: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
   });
 });
