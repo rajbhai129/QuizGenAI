@@ -70,38 +70,41 @@ const QuizGenerator = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Add size check
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      alert('PDF file is too large. Maximum size is 10MB');
+      return;
+    }
+
     setPdfLoading(true);
     try {
       const arrayBuffer = await file.arrayBuffer();
       const base64String = await arrayBufferToBase64(arrayBuffer);
 
-      console.log('Sending PDF extraction request to:', `${API_BASE}/api/extract-pdf`);
-      
       const response = await fetch(`${API_BASE}/api/extract-pdf`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
         },
         body: JSON.stringify({ pdf: base64String }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ 
-          error: `Server error (${response.status})` 
-        }));
-        throw new Error(errorData.error || 'Failed to extract text from PDF');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
+      
       if (!data.text) {
-        throw new Error('No text could be extracted from the PDF');
+        throw new Error('No text could be extracted from PDF');
       }
 
       setInputText((prev) => prev ? `${prev}\n\n${data.text}` : data.text);
     } catch (error) {
-      console.error("PDF extraction error:", error);
-      alert(`PDF extraction failed: ${error.message}`);
+      console.error('PDF extraction error:', error);
+      alert('Failed to extract text from PDF. Please try again or use a different PDF.');
     } finally {
       setPdfLoading(false);
     }

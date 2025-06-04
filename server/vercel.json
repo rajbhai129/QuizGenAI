@@ -8,6 +8,16 @@
   ],
   "routes": [
     {
+      "src": "/api/extract-pdf",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "index.js"
+    },
+    {
+      "src": "/api/quiz/generate",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "index.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "index.js"
     }
