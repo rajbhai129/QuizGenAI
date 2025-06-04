@@ -3,11 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useQuiz } from "../context/QuizContext";
 import { Sparkles, FileText, Settings, Loader2, Image, File, Paperclip } from "lucide-react";
 import Tesseract from 'tesseract.js';
-import { GlobalWorkerOptions } from "pdfjs-dist";
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Configure PDF.js worker to load from public folder
-GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 const API_BASE = process.env.REACT_APP_API_URL || "";
 
@@ -26,10 +21,31 @@ const QuizGenerator = () => {
   const navigate = useNavigate();
   const { setQuizData } = useQuiz();
 
+  // Function to convert ArrayBuffer to base64 using FileReader
+  const arrayBufferToBase64 = (buffer) => {
+    return new Promise((resolve, reject) => {
+      const blob = new Blob([buffer], { type: 'application/pdf' });
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64String = reader.result.split(',')[1]; // Remove "data:application/pdf;base64," prefix
+        resolve(base64String);
+      };
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(blob);
+    });
+  };
+
   // Handle image upload and OCR
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Validate file size (max 10MB for images)
+    const maxSizeInBytes = 10 * 1024 * 1024; // 10 MB
+    if (file.size > maxSizeInBytes) {
+      alert(`Image size exceeds 10 MB. Please upload a smaller image (max ${maxSizeInBytes / 1024 / 1024}MB).`);
+      return;
+    }
 
     setImageLoading(true);
     try {
@@ -49,28 +65,47 @@ const QuizGenerator = () => {
     }
   };
 
-  // Handle PDF upload and text extraction
+  // Handle PDF upload and text extraction by calling the backend API
   const handlePdfUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Validate file size (max 35MB for PDFs)
+    const maxSizeInBytes = 35 * 1024 * 1024;
+    if (file.size > maxSizeInBytes) {
+      alert(`PDF size exceeds 35 MB. Please upload a smaller PDF (max ${maxSizeInBytes / 1024 / 1024}MB).`);
+      return;
+    }
+
     setPdfLoading(true);
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-      let extractedText = '';
+      const base64String = await arrayBufferToBase64(arrayBuffer);
 
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
-        extractedText += pageText + '\n';
+      console.log('Sending PDF extraction request...');
+      
+      const response = await fetch(`${API_BASE}/api/extract-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pdf: base64String }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to extract text from PDF' }));
+        throw new Error(errorData.error || 'Failed to extract text from PDF');
       }
 
-      setInputText((prev) => prev ? `${prev}\n\n${extractedText}` : extractedText);
+      const data = await response.json();
+      if (!data.text) {
+        throw new Error('No text could be extracted from the PDF');
+      }
+
+      setInputText((prev) => prev ? `${prev}\n\n${data.text}` : data.text);
     } catch (error) {
       console.error("Error extracting text from PDF:", error);
-      alert("Failed to extract text from PDF. Please try another PDF.");
+      alert(error.message || "Failed to extract text from PDF. Please try another PDF.");
     } finally {
       setPdfLoading(false);
     }
@@ -140,9 +175,19 @@ const QuizGenerator = () => {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Server error response:', errorText);
-        throw new Error(`Server error (${response.status}): ${errorText}`);
+        const contentType = response.headers.get('content-type');
+        let errorMessage = `Server error (${response.status})`;
+        
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } else {
+          const errorText = await response.text();
+          console.error('Non-JSON response from server:', errorText);
+          errorMessage = 'Server returned an unexpected response. Please try again.';
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
