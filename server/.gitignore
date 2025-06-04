@@ -1,13 +1,9 @@
 # dependencies
-/node_modules
+node_modules
 
 # environment variables
 .env
-
-# logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+.env.local
 
 # misc
-.DS_Store
+.vercel
