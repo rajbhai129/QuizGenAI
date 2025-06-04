@@ -14,7 +14,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Configure CORS
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://quiz-gen-ai-sooty.vercel.app']
+    ? ['https://quiz-gen-ai-sooty.vercel.app', 'https://quiz-gen-ai.vercel.app']
     : '*',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -22,6 +22,9 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Add preflight handling for PDF upload
+app.options('/api/extract-pdf', cors(corsOptions));
 
 // Health check endpoint
 app.get('/', (req, res) => {
