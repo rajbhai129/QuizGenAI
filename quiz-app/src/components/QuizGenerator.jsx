@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuiz } from "../context/QuizContext";
-import { Sparkles, FileText, Settings, Loader2 } from "lucide-react";
+import { Sparkles, FileText, Settings, Loader2, Image, File, Paperclip } from "lucide-react";
+import Tesseract from 'tesseract.js';
 
 const API_BASE = process.env.REACT_APP_API_URL || "";
 
@@ -12,6 +13,9 @@ const QuizGenerator = () => {
   const [multipleCorrect, setMultipleCorrect] = useState("");
   const [numOptions, setNumOptions] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fileLoading, setFileLoading] = useState(false);
+  const fileInputRef = useRef(null);
+  const pdfInputRef = useRef(null);
   const navigate = useNavigate();
   const { setQuizData } = useQuiz();
 
@@ -79,6 +83,66 @@ const QuizGenerator = () => {
     }
   };
 
+  // Handle PDF upload
+  const handlePdfUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setFileLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('pdf', file);
+
+      const response = await fetch(`${API_BASE}/api/extract-pdf`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to extract text from PDF');
+      }
+
+      const { text } = await response.json();
+      setInputText((prev) => prev ? `${prev}\n\n${text}` : text);
+    } catch (error) {
+      console.error("Error extracting text from PDF:", error);
+      alert("Failed to extract text from PDF. Please try another PDF.");
+    } finally {
+      setFileLoading(false);
+    }
+  };
+
+  // Handle Image upload
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setFileLoading(true);
+    try {
+      const result = await Tesseract.recognize(
+        file,
+        'eng',
+        { logger: m => console.log(m) }
+      );
+
+      setInputText((prev) => prev ? `${prev}\n\n${result.data.text}` : result.data.text);
+    } catch (error) {
+      console.error("Error extracting text from image:", error);
+      alert("Failed to extract text from image. Please try another image.");
+    } finally {
+      setFileLoading(false);
+    }
+  };
+
+  // Trigger file inputs
+  const triggerFileUpload = (type) => {
+    if (type === 'pdf') {
+      pdfInputRef.current?.click();
+    } else {
+      fileInputRef.current?.click();
+    }
+  };
+
   return (
     <section className="bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 py-20 min-h-[100vh] flex items-center justify-center px-4">
       <div className="w-full max-w-3xl bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-10 relative overflow-hidden border border-white">
@@ -90,8 +154,55 @@ const QuizGenerator = () => {
             <Sparkles className="text-pink-500" /> Generate Your AI Quiz
           </h2>
           <p className="text-gray-600 mt-2 text-lg">
-            Paste your content below and customize your quiz. Instantly create questions using AI!
+            Upload content or paste text below to create your quiz instantly!
           </p>
+        </div>
+
+        {/* File Upload Section */}
+        <div className="mb-6">
+          <div className="flex justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => triggerFileUpload('image')}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              <Image size={20} />
+              Upload Image
+            </button>
+            <button
+              type="button"
+              onClick={() => triggerFileUpload('pdf')}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+            >
+              <File size={20} />
+              Upload PDF
+            </button>
+          </div>
+
+          {/* Hidden file inputs */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageUpload}
+            accept="image/*"
+            className="hidden"
+          />
+          <input
+            type="file"
+            ref={pdfInputRef}
+            onChange={handlePdfUpload}
+            accept=".pdf"
+            className="hidden"
+          />
+
+          {fileLoading && (
+            <div className="text-center mt-4">
+              <div className="inline-flex items-center gap-2">
+                <Loader2 className="animate-spin" size={20} />
+                <span>Processing file...</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <form

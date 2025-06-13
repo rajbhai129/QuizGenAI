@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuiz } from '../context/QuizContext';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, AlignmentType } from 'docx';
+import { Download } from 'lucide-react';
 
 const QuizResult = () => {
   const { quizData, userAnswers } = useQuiz();
   const navigate = useNavigate();
+  const [userName, setUserName] = useState('');
 
   if (!quizData || quizData.length === 0) {
     return (
@@ -84,6 +87,189 @@ const QuizResult = () => {
     { name: 'Incorrect', value: incorrectQuestions, color: '#EF4444' },
   ];
 
+  const generateWordDocument = async () => {
+    if (!userName.trim()) {
+      alert('Please enter your name before generating the report');
+      return;
+    }
+
+    const currentDate = new Date().toLocaleDateString();
+    const currentTime = new Date().toLocaleTimeString();
+
+    // Create document
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          // Header with logo and title
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: "QuizGenAI - Quiz Result Report",
+                bold: true,
+                size: 32,
+                color: "#4F46E5"
+              })
+            ]
+          }),
+
+          // Basic Info Table
+          new Table({
+            width: {
+              size: 100,
+              type: 'pct',
+            },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph("Student Name:")],
+                    width: {
+                      size: 30,
+                      type: 'pct',
+                    },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph(userName)],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph("Date:")],
+                  }),
+                  new TableCell({
+                    children: [new Paragraph(currentDate)],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph("Time:")],
+                  }),
+                  new TableCell({
+                    children: [new Paragraph(currentTime)],
+                  }),
+                ],
+              }),
+            ],
+          }),
+
+          // Score Summary
+          new Paragraph({
+            text: "\nScore Summary",
+            heading: 'Heading1',
+            bold: true,
+            spacing: {
+              after: 200,
+            },
+          }),
+
+          new Table({
+            width: {
+              size: 100,
+              type: 'pct',
+            },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph("Total Score:")],
+                  }),
+                  new TableCell({
+                    children: [new Paragraph(`${totalScore.toFixed(2)} / ${quizData.length}`)],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph("Correct Answers:")],
+                  }),
+                  new TableCell({
+                    children: [new Paragraph(`${correctQuestions}`)],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [new Paragraph("Incorrect Answers:")],
+                  }),
+                  new TableCell({
+                    children: [new Paragraph(`${incorrectQuestions}`)],
+                  }),
+                ],
+              }),
+            ],
+          }),
+
+          // Detailed Question Analysis
+          new Paragraph({
+            text: "\nDetailed Question Analysis",
+            heading: 'Heading1',
+            bold: true,
+            spacing: {
+              before: 400,
+              after: 200,
+            },
+          }),
+
+          ...questionResults.map((result, index) => 
+            new Table({
+              width: {
+                size: 100,
+                type: 'pct',
+              },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 1, color: "#707070" },    // Fixed hex code
+                bottom: { style: BorderStyle.SINGLE, size: 1, color: "#707070" }, // Fixed hex code
+                left: { style: BorderStyle.SINGLE, size: 1, color: "#707070" },   // Fixed hex code
+                right: { style: BorderStyle.SINGLE, size: 1, color: "#707070" },  // Fixed hex code
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [
+                        new Paragraph({
+                          text: `Question ${index + 1}: ${result.question}`,
+                          bold: true,
+                        }),
+                        new Paragraph(`Type: ${result.type}`),
+                        new Paragraph(`Your Answer: ${result.userAnswer}`),
+                        new Paragraph(`Correct Answer: ${result.correctAnswer}`),
+                        new Paragraph(`Score: ${result.score.toFixed(2)} / 1`),
+                        new Paragraph({
+                          text: result.isCorrect ? "Status: Correct" : "Status: Incorrect",
+                          color: result.isCorrect ? "#10B981" : "#EF4444",
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            })
+          ),
+        ],
+      }],
+    });
+
+    // Generate and download the document
+    const blob = await Packer.toBlob(doc);
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Quiz_Result_${userName}_${currentDate}.docx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
@@ -155,6 +341,27 @@ const QuizResult = () => {
             </p>
           </div>
         ))}
+      </div>
+
+      {/* Name Input and Export Section */}
+      <div className="bg-white rounded-lg shadow-lg p-6 mt-6 border border-gray-200">
+        <h3 className="text-xl font-semibold mb-4">Generate Report</h3>
+        <div className="flex items-center gap-4">
+          <input
+            type="text"
+            placeholder="Enter your name"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <button
+            onClick={generateWordDocument}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+          >
+            <Download size={20} />
+            Export Report
+          </button>
+        </div>
       </div>
 
       {/* Back to Home Button */}
