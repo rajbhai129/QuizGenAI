@@ -270,6 +270,36 @@ const QuizResult = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  // Inside handleSubmit or after quiz completion
+  const saveQuizResult = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/quiz-result`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          quizResults: {
+            quizId: Date.now().toString(),
+            date: new Date(),
+            score: totalScore,
+            totalQuestions: quizData.length,
+            correctAnswers: correctQuestions,
+            incorrectAnswers: incorrectQuestions,
+            details: questionResults
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save quiz results');
+      }
+    } catch (error) {
+      console.error('Error saving quiz results:', error);
+    }
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">

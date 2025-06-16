@@ -1,11 +1,16 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const connectDB = require('./config/db');
+const authRoutes = require('./routes/authRoutes');
+const quizRoutes = require('./routes/quizRoutes');
+const { protect } = require('./middleware/auth');
 const multer = require('multer');
 const { extractPdf } = require('./controllers/pdfController');
-const quizRoutes = require('./routes/quizRoutes');
 
 dotenv.config();
+connectDB();
+
 const app = express();
 
 // Configure multer for PDF uploads
@@ -28,7 +33,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // Routes
-app.post('/api/extract-pdf', upload.single('pdf'), (req, res, next) => {
+app.post('/api/extract-pdf', protect, upload.single('pdf'), (req, res, next) => {
   try {
     extractPdf(req, res);
   } catch (error) {
@@ -36,7 +41,8 @@ app.post('/api/extract-pdf', upload.single('pdf'), (req, res, next) => {
   }
 });
 
-app.use('/api/quiz', quizRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/quiz', protect, quizRoutes); // Already protected
 
 // Error handling middleware
 app.use((err, req, res, next) => {

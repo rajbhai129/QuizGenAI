@@ -46,14 +46,15 @@ const QuizGenerator = () => {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Accept": "application/json"
+          "Accept": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem('token')}` // Add this line
         },
         body: JSON.stringify({
-          content: inputText.trim(),           // Changed from prompt
-          totalQuestions: total,               // Changed from numQuestions
+          content: inputText.trim(),
+          totalQuestions: total,
           singleCorrect: single,
           multipleCorrect: multiple,
-          optionsPerQuestion: options          // Changed from numOptions
+          optionsPerQuestion: options
         }),
       });
 
@@ -77,7 +78,12 @@ const QuizGenerator = () => {
       navigate("/take");
     } catch (err) {
       console.error("Quiz generation error:", err);
-      alert(err.message || "Failed to generate quiz. Please try again.");
+      if (err.response?.status === 401) {
+        alert("Please login to generate quiz");
+        navigate('/login');
+      } else {
+        alert(err.message || "Failed to generate quiz. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -95,6 +101,9 @@ const QuizGenerator = () => {
 
       const response = await fetch(`${API_BASE}/api/extract-pdf`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}` // Add this line
+        },
         body: formData,
       });
 

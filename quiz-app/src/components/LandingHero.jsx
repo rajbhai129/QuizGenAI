@@ -14,7 +14,7 @@ const LandingHero = () => {
 
         <div className="mt-10 flex flex-col sm:flex-row justify-center items-center gap-4">
           <a
-            href="/create"
+            href="/quiz"
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition"
           >
             Get Started
