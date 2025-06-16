@@ -8,8 +8,23 @@
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Authorization"
+      },
+      "dest": "/index.js"
+    },
+    {
       "src": "/(.*)",
-      "dest": "index.js"
+      "dest": "/index.js"
     }
-  ]
+  ],
+  "env": {
+    "MONGODB_URI": "mongodb+srv://hemrajlalawat52:OkSmfWKfU38YmJpL@quizapp.4wiw83r.mongodb.net/?retryWrites=true&w=majority",
+    "JWT_SECRET": "dae488c086cdace79bc12e2f6bb2ccb987b07e792e518d7e91a3750e58b37638c43bc5829d270f612e3a29af823c8919b42ef0ae89f01469add4b7468e37fb01",
+    "TOGETHER_API_KEY": "86b8bf80498e9d3d873c0d33c656c95fe6681cf7832a2e0d34599523d0f27b36",
+    "NODE_ENV": "production"
+  }
 }
