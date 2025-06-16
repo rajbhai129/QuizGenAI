@@ -29,7 +29,12 @@ const upload = multer({
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://your-frontend-domain.vercel.app'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json({ limit: '50mb' }));
 
 // Routes
@@ -47,15 +52,19 @@ app.use('/api/quiz', protect, quizRoutes); // Already protected
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Server Error:', err);
-  if (err instanceof multer.MulterError) {
-    return res.status(400).json({
-      error: 'File upload error',
-      details: err.message
-    });
+  
+  // More detailed error logging
+  if (err.name === 'MongoError') {
+    console.error('MongoDB Error:', err);
   }
+  if (err.name === 'ValidationError') {
+    console.error('Validation Error:', err);
+  }
+  
   res.status(500).json({
     error: 'Internal server error',
-    details: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
+    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 
