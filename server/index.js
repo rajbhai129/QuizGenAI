@@ -30,11 +30,17 @@ const upload = multer({
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://your-frontend-domain.vercel.app'],
+  origin: [
+    'http://localhost:3000',
+    'https://quiz-gen-ai-raj.vercel.app', // Your frontend URL
+    'https://quiz-gen-ai-sooty.vercel.app' // Your backend URL
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  credentials: true,
+  optionsSuccessStatus: 200 // Add this line
 }));
+app.options('*', cors()); // Add this line
 app.use(express.json({ limit: '50mb' }));
 
 // Routes

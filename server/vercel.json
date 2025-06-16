@@ -10,9 +10,10 @@
     {
       "src": "/api/(.*)",
       "headers": {
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": "https://quiz-gen-ai-raj.vercel.app",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Authorization"
+        "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true"
       },
       "dest": "/index.js"
     },

@@ -23,6 +23,7 @@ const Login = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
+        credentials: 'include' // Add this line
       });
 
       const data = await response.json();
@@ -41,7 +42,8 @@ const Login = () => {
 
       navigate('/');
     } catch (err) {
-      setError(err.message);
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
