@@ -1,4 +1,4 @@
-import { createContext, useState, useContext } from "react";
+import { createContext, useState, useContext, useCallback } from "react";
 
 // 1. Create context
 const QuizContext = createContext();
@@ -9,7 +9,7 @@ export const QuizProvider = ({ children }) => {
   const [userAnswers, setUserAnswers] = useState([]); // Stores user's selected answers
   const [quizHistory, setQuizHistory] = useState({ taken: [], created: [] });
 
-  const fetchQuizHistory = async () => {
+  const fetchQuizHistory = useCallback(async () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/quiz-history`, {
         headers: {
@@ -21,7 +21,7 @@ export const QuizProvider = ({ children }) => {
     } catch (error) {
       console.error('Error fetching quiz history:', error);
     }
-  };
+  }, []);
 
   const resetQuiz = () => {
     setQuizData(null);
