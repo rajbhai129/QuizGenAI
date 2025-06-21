@@ -10,6 +10,71 @@ const QuizResult = () => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState('');
 
+  useEffect(() => {
+    if (quizData && quizData.length > 0) {
+      const saveResults = async () => {
+        let totalScore = 0;
+        let correctQuestions = 0;
+        let incorrectQuestions = 0;
+        const questionResults = quizData.map((question, index) => {
+          const userAns = userAnswers[index] || [];
+          const correctAns = question.correctAnswers;
+          const userIndices = userAns.map(ans => ans.charCodeAt(0) - 97).filter(idx => idx >= 0 && idx < question.options.length);
+          const hasWrong = userIndices.some(idx => !correctAns.includes(idx));
+          let questionScore = 0;
+          let isCorrect = false;
+          if (question.type === "single") {
+            if (userIndices.length === 1 && userIndices[0] === correctAns[0]) {
+              questionScore = 1; isCorrect = true; correctQuestions++;
+            } else {
+              incorrectQuestions++;
+            }
+          } else {
+            if (hasWrong || userIndices.length === 0) {
+              incorrectQuestions++;
+            } else {
+              const correctSelected = userIndices.filter(idx => correctAns.includes(idx)).length;
+              questionScore = (correctSelected / correctAns.length);
+              if (correctSelected === correctAns.length) {
+                isCorrect = true; correctQuestions++;
+              } else {
+                incorrectQuestions++;
+              }
+            }
+          }
+          totalScore += questionScore;
+          return {
+            question: question.question,
+            userAnswer: userAns.map(idx => question.options[idx.charCodeAt(0) - 97]).join(", ") || "Not answered",
+            correctAnswer: correctAns.map(idx => question.options[idx]).join(", "),
+            isCorrect, score: questionScore, type: question.type
+          };
+        });
+
+        try {
+          await fetch(`${process.env.REACT_APP_API_URL}/api/auth/quiz-result`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+            body: JSON.stringify({
+              quizResults: {
+                quizId: quizData.id || Date.now().toString(),
+                score: totalScore, totalQuestions: quizData.length,
+                correctAnswers: correctQuestions, incorrectAnswers: incorrectQuestions,
+                details: questionResults, type: 'taken', date: new Date()
+              }
+            })
+          });
+          await fetchQuizHistory();
+        } catch (error) {
+          console.error('Error saving results:', error);
+          alert('Failed to save results automatically.');
+        }
+      };
+      
+      saveResults();
+    }
+  }, [quizData, userAnswers, fetchQuizHistory]);
+
   if (!quizData || quizData.length === 0) {
     return (
       <div className="p-6 max-w-3xl mx-auto text-center">
@@ -263,42 +328,6 @@ const QuizResult = () => {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   };
-
-  const saveResults = async () => {
-    try {
-      await fetch(`${process.env.REACT_APP_API_URL}/api/auth/quiz-result`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          quizResults: {
-            quizId: quizData.id || Date.now().toString(),
-            score: totalScore,
-            totalQuestions: quizData.length,
-            correctAnswers: correctQuestions,
-            incorrectAnswers: incorrectQuestions,
-            details: questionResults,
-            type: 'taken',
-            date: new Date()
-          }
-        })
-      });
-      await fetchQuizHistory();
-      alert('Results saved successfully!');
-      navigate('/profile');
-    } catch (error) {
-      console.error('Error saving results:', error);
-      alert('Failed to save results.');
-    }
-  };
-
-  // Automatically save results when component mounts
-  useEffect(() => {
-    saveResults();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Data for pie chart
   const pieData = [
