@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuiz } from '../context/QuizContext';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
@@ -6,7 +6,7 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Borde
 import { Download } from 'lucide-react';
 
 const QuizResult = () => {
-  const { quizData, userAnswers } = useQuiz();
+  const { quizData, userAnswers, fetchQuizHistory } = useQuiz();
   const navigate = useNavigate();
   const [userName, setUserName] = useState('');
 
@@ -80,12 +80,6 @@ const QuizResult = () => {
       type: question.type
     };
   });
-
-  // Data for pie chart
-  const pieData = [
-    { name: 'Correct', value: correctQuestions, color: '#10B981' },
-    { name: 'Incorrect', value: incorrectQuestions, color: '#EF4444' },
-  ];
 
   const generateWordDocument = async () => {
     if (!userName.trim()) {
@@ -270,10 +264,9 @@ const QuizResult = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  // Inside handleSubmit or after quiz completion
-  const saveQuizResult = async () => {
+  const saveResults = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/quiz-result`, {
+      await fetch(`${process.env.REACT_APP_API_URL}/api/auth/quiz-result`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -281,24 +274,37 @@ const QuizResult = () => {
         },
         body: JSON.stringify({
           quizResults: {
-            quizId: Date.now().toString(),
-            date: new Date(),
+            quizId: quizData.id || Date.now().toString(),
             score: totalScore,
             totalQuestions: quizData.length,
             correctAnswers: correctQuestions,
             incorrectAnswers: incorrectQuestions,
-            details: questionResults
+            details: questionResults,
+            type: 'taken',
+            date: new Date()
           }
         })
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to save quiz results');
-      }
+      await fetchQuizHistory();
+      alert('Results saved successfully!');
+      navigate('/profile');
     } catch (error) {
-      console.error('Error saving quiz results:', error);
+      console.error('Error saving results:', error);
+      alert('Failed to save results.');
     }
   };
+
+  // Automatically save results when component mounts
+  useEffect(() => {
+    saveResults();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Data for pie chart
+  const pieData = [
+    { name: 'Correct', value: correctQuestions, color: '#10B981' },
+    { name: 'Incorrect', value: incorrectQuestions, color: '#EF4444' },
+  ];
 
   return (
     <div className="p-6 max-w-4xl mx-auto">

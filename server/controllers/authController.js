@@ -26,6 +26,7 @@ const register = async (req, res) => {
       _id: user._id,
       username: user.username,
       email: user.email,
+      avatar: user.avatar,
       token: generateToken(user._id)
     });
   } catch (error) {
@@ -43,6 +44,7 @@ const login = async (req, res) => {
         _id: user._id,
         username: user.username,
         email: user.email,
+        avatar: user.avatar,
         token: generateToken(user._id)
       });
     } else {
@@ -86,9 +88,27 @@ const getQuizHistory = async (req, res) => {
   }
 };
 
+const updateAvatar = async (req, res) => {
+  try {
+    const { avatar } = req.body; // Expecting a Base64 string
+    if (!avatar) {
+      return res.status(400).json({ error: 'Avatar data is required.' });
+    }
+    const user = await User.findByIdAndUpdate(req.user._id, { avatar }, { new: true });
+    res.json({
+      message: 'Avatar updated successfully',
+      avatar: user.avatar
+    });
+  } catch (error) {
+    console.error('Error updating avatar:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   register,
   login,
   saveQuizResult,
-  getQuizHistory
+  getQuizHistory,
+  updateAvatar
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User, LogIn, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -69,13 +70,22 @@ const Navbar = () => {
           </a>
           {user ? (
             <>
-              <span className="text-white">Welcome, {user.username}</span>
-              <a href="/profile" className="hover:text-yellow-300 transition">
-                Profile
-              </a>
-              <button onClick={logout} className="hover:text-yellow-300">
-                Logout
-              </button>
+              <div className="hidden md:flex items-center gap-4">
+                <Link to="/profile" className="flex items-center gap-2">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt="Avatar" className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <User className="w-8 h-8 rounded-full bg-gray-200 p-1" />
+                  )}
+                  <span className="font-semibold">{user.username}</span>
+                </Link>
+                <button
+                  onClick={logout}
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+                >
+                  Logout
+                </button>
+              </div>
             </>
           ) : (
             <>
@@ -112,6 +122,33 @@ const Navbar = () => {
           <a href="/about" className="block">
             About
           </a>
+          {user ? (
+            <>
+              <Link to="/profile" className="flex items-center gap-2 py-2" onClick={() => setOpen(false)}>
+                 {user.avatar ? (
+                  <img src={user.avatar} alt="Avatar" className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <User className="w-8 h-8 rounded-full bg-gray-200 p-1" />
+                )}
+                <span>Profile</span>
+              </Link>
+              <button
+                onClick={logout}
+                className="mt-4 bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition w-full"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <a href="/login" className="block">
+                Login
+              </a>
+              <a href="/register" className="block">
+                Register
+              </a>
+            </>
+          )}
         </div>
       )}
     </nav>
