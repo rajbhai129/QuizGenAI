@@ -1,34 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useQuiz } from '../../context/QuizContext';
 import { Calendar, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 
 const Profile = () => {
   const { user } = useAuth();
-  const [quizHistory, setQuizHistory] = useState({ taken: [], created: [] });
+  const { quizHistory, fetchQuizHistory } = useQuiz();
   const [activeTab, setActiveTab] = useState('taken');
   const [loading, setLoading] = useState(true);
   const [expandedQuiz, setExpandedQuiz] = useState(null);
 
   useEffect(() => {
-    const fetchQuizHistory = async () => {
-      try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/quiz-history`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        const data = await response.json();
-        console.log('Quiz History:', data); // Debug log
-        setQuizHistory(data);
-      } catch (error) {
-        console.error('Error fetching quiz history:', error);
-      } finally {
-        setLoading(false);
-      }
+    const loadHistory = async () => {
+      setLoading(true);
+      await fetchQuizHistory();
+      setLoading(false);
     };
-
-    fetchQuizHistory();
-  }, []);
+    loadHistory();
+  }, [fetchQuizHistory]);
 
   const toggleQuizDetails = (quizId) => {
     setExpandedQuiz(expandedQuiz === quizId ? null : quizId);

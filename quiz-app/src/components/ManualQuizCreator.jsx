@@ -12,7 +12,7 @@ const ManualQuizCreator = () => {
     correctAnswers: []
   }]);
   const navigate = useNavigate();
-  const { setQuizData } = useQuiz();
+  const { setQuizData, fetchQuizHistory } = useQuiz();
 
   const addQuestion = () => {
     setQuestions([...questions, {
@@ -88,7 +88,8 @@ const ManualQuizCreator = () => {
           }
         })
       });
-
+      
+      await fetchQuizHistory();
       setQuizData(questions);
       navigate('/take');
     } catch (error) {

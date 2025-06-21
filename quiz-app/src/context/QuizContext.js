@@ -7,6 +7,21 @@ const QuizContext = createContext();
 export const QuizProvider = ({ children }) => {
   const [quizData, setQuizData] = useState(null); // Stores generated quiz
   const [userAnswers, setUserAnswers] = useState([]); // Stores user's selected answers
+  const [quizHistory, setQuizHistory] = useState({ taken: [], created: [] });
+
+  const fetchQuizHistory = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/quiz-history`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      setQuizHistory(data);
+    } catch (error) {
+      console.error('Error fetching quiz history:', error);
+    }
+  };
 
   const resetQuiz = () => {
     setQuizData(null);
@@ -21,6 +36,8 @@ export const QuizProvider = ({ children }) => {
         userAnswers,
         setUserAnswers,
         resetQuiz,
+        quizHistory,
+        fetchQuizHistory,
       }}
     >
       {children}

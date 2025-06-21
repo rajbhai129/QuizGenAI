@@ -17,7 +17,7 @@ const QuizGenerator = () => {
   const fileInputRef = useRef(null);
   const pdfInputRef = useRef(null);
   const navigate = useNavigate();
-  const { setQuizData } = useQuiz();
+  const { setQuizData, fetchQuizHistory } = useQuiz();
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -74,6 +74,7 @@ const QuizGenerator = () => {
         throw new Error("Invalid quiz format received from server");
       }
 
+      await fetchQuizHistory();
       setQuizData(data.quiz);
       navigate("/take");
     } catch (err) {

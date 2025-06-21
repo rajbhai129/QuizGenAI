@@ -1,4 +1,5 @@
 const axios = require("axios");
+const User = require('../models/User');
 
 const generateQuiz = async (req, res) => {
   try {
@@ -86,6 +87,16 @@ Generate the quiz now:`;
         
         // Validate quiz structure
         if (validateQuizStructure(quizArray, totalQuestions, singleCorrect, multipleCorrect, optionsPerQuestion)) {
+          // Save quiz to user's history
+          const user = await User.findById(req.user._id);
+          user.quizHistory.push({
+            quizId: Date.now().toString(),
+            totalQuestions: totalQuestions,
+            details: quizArray,
+            type: 'created',
+            date: new Date()
+          });
+          await user.save();
           break;
         } else {
           throw new Error('Quiz validation failed');
