@@ -8,18 +8,20 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "headers": {
-        "Access-Control-Allow-Origin": "https://quiz-gen-ai-raj.vercel.app",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Authorization",
-        "Access-Control-Allow-Credentials": "true"
-      },
-      "dest": "/index.js"
+      "src": "/api/auth/(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/api/quiz/(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/api/extract-pdf",
+      "dest": "index.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.js"
+      "dest": "index.js"
     }
   ],
   "env": {

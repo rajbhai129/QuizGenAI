@@ -32,15 +32,13 @@ const upload = multer({
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://quiz-gen-ai-raj.vercel.app', // Your frontend URL
-    'https://quiz-gen-ai-sooty.vercel.app' // Your backend URL
+    'https://quiz-gen-ai-raj.vercel.app' // Your frontend URL
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With', 'Accept', 'Accept-Version', 'Content-Length', 'Content-MD5', 'Date', 'X-Api-Version'],
   credentials: true,
-  optionsSuccessStatus: 200 // Add this line
+  optionsSuccessStatus: 200
 }));
-app.options('*', cors()); // Add this line
 app.use(express.json({ limit: '50mb' }));
 
 // Routes
@@ -55,22 +53,44 @@ app.post('/api/extract-pdf', protect, upload.single('pdf'), (req, res, next) => 
 app.use('/api/auth', authRoutes);
 app.use('/api/quiz', protect, quizRoutes); // Already protected
 
-// Error handling middleware
+// Error handling for undefined routes
+app.use((req, res, next) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: 'The requested resource does not exist'
+  });
+});
+
+// Global error handler
 app.use((err, req, res, next) => {
   console.error('Server Error:', err);
   
-  // More detailed error logging
-  if (err.name === 'MongoError') {
+  if (err.name === 'MongoError' || err.name === 'MongoServerError') {
     console.error('MongoDB Error:', err);
+    return res.status(500).json({
+      error: 'Database Error',
+      message: process.env.NODE_ENV === 'production' ? 'Database operation failed' : err.message
+    });
   }
+
   if (err.name === 'ValidationError') {
-    console.error('Validation Error:', err);
+    return res.status(400).json({
+      error: 'Validation Error',
+      message: err.message
+    });
+  }
+
+  // Handle path-to-regexp errors
+  if (err.message && err.message.includes('Missing parameter name')) {
+    return res.status(400).json({
+      error: 'Route Error',
+      message: 'Invalid route configuration'
+    });
   }
   
   res.status(500).json({
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
   });
 });
 

@@ -23,7 +23,8 @@ const Login = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
-        credentials: 'include' // Add this line
+        mode: 'cors', // Add this
+        credentials: 'include' // Add this
       });
 
       const data = await response.json();
