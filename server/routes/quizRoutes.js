@@ -1,11 +1,15 @@
 // routes/quizRoutes.js (or similar)
 const express = require('express');
 const router = express.Router();
-const { generateQuiz } = require('../controllers/quizController');
+const { 
+  generateQuiz,
+  createSharedQuiz, 
+  getSharedQuiz, 
+  submitSharedQuiz 
+} = require('../controllers/quizController');
 const { protect } = require('../middleware/auth');
-const { createSharedQuiz, getSharedQuiz, submitSharedQuiz } = require('../controllers/quizController');
 
-router.post('/generate', generateQuiz);
+router.post('/generate', protect, generateQuiz);
 
 // Shared quiz routes
 router.post('/create', protect, createSharedQuiz);
