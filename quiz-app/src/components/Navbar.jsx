@@ -42,7 +42,6 @@ const Navbar = () => {
               <button
                 className="flex items-center gap-2 focus:outline-none group"
                 onClick={() => setDropdown((d) => !d)}
-                onBlur={() => setTimeout(() => setDropdown(false), 150)}
               >
                 {user.avatar ? (
                   <img src={user.avatar} alt="Avatar" className="w-10 h-10 rounded-full object-cover border-2 border-blue-400 shadow" />
@@ -54,8 +53,8 @@ const Navbar = () => {
               </button>
               {dropdown && (
                 <div className="absolute right-0 mt-12 w-44 bg-white rounded-xl shadow-lg py-2 z-50 border border-blue-100 animate-fade-in">
-                  <Link to="/profile" className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded-t-xl">Profile</Link>
-                  <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 rounded-b-xl">Logout</button>
+                  <Link to="/profile" className="block px-4 py-2 text-gray-700 hover:bg-blue-50 rounded-t-xl" onClick={() => setDropdown(false)}>Profile</Link>
+                  <button onClick={() => { setDropdown(false); handleLogout(); }} className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 rounded-b-xl">Logout</button>
                 </div>
               )}
             </div>
