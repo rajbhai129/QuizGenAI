@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuiz } from '../context/QuizContext';
-import { Plus, Trash2, Save } from 'lucide-react';
+import { Plus, Trash2, Save, Link as LinkIcon, CheckCircle } from 'lucide-react';
 
 const ManualQuizCreator = () => {
   const [questions, setQuestions] = useState([{
@@ -13,6 +13,9 @@ const ManualQuizCreator = () => {
   }]);
   const navigate = useNavigate();
   const { setQuizData, fetchQuizHistory } = useQuiz();
+  const [shareModal, setShareModal] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const addQuestion = () => {
     setQuestions([...questions, {
@@ -72,34 +75,71 @@ const ManualQuizCreator = () => {
     }
 
     try {
-      // Save quiz as created
-      await fetch(`${process.env.REACT_APP_API_URL}/api/auth/quiz-result`, {
+      // Save quiz as shared quiz
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/quiz/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          quizResults: {
-            quizId: Date.now().toString(),
-            totalQuestions: questions.length,
-            details: questions,
-            type: 'created'
-          }
+          details: questions,
+          title: 'Manual Quiz',
+          description: ''
         })
       });
-      
-      await fetchQuizHistory();
-      setQuizData(questions);
-      navigate('/take');
+      const data = await res.json();
+      if (res.ok && data.quizId) {
+        const link = `${window.location.origin}/take/${data.quizId}`;
+        setShareLink(link);
+        setShareModal(true);
+      } else {
+        throw new Error(data.error || 'Failed to create quiz');
+      }
     } catch (error) {
       console.error('Error saving quiz:', error);
       alert('Failed to save quiz');
     }
   };
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
+      {/* Share Modal */}
+      {shareModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center border-2 border-blue-200">
+            <LinkIcon className="mx-auto text-blue-500 mb-2" size={40} />
+            <h2 className="text-2xl font-bold mb-2 text-gray-800">Quiz Created!</h2>
+            <p className="mb-4 text-gray-600">Share this link with anyone to let them take your quiz:</p>
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <input
+                type="text"
+                value={shareLink}
+                readOnly
+                className="flex-1 px-3 py-2 border rounded-lg bg-gray-100 text-gray-700 text-sm"
+              />
+              <button
+                onClick={handleCopy}
+                className={`px-3 py-2 rounded-lg font-semibold transition ${copied ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                {copied ? <><CheckCircle className="inline mr-1" size={18}/>Copied!</> : 'Copy Link'}
+              </button>
+            </div>
+            <button
+              onClick={() => setShareModal(false)}
+              className="mt-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       <div className="max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold text-center mb-8">Create Quiz Manually</h1>
 

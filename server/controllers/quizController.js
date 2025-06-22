@@ -1,5 +1,6 @@
 const axios = require("axios");
 const User = require('../models/User');
+const Quiz = require('../models/Quiz');
 
 const generateQuiz = async (req, res) => {
   try {
@@ -142,6 +143,77 @@ function validateQuizStructure(quiz, totalQuestions, singleCorrect, multipleCorr
   });
 }
 
+// Create a shared quiz
+exports.createSharedQuiz = async (req, res) => {
+  try {
+    const { details, title, description } = req.body;
+    const quizId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    const quiz = await Quiz.create({
+      quizId,
+      creator: req.user._id,
+      details,
+      title,
+      description
+    });
+    res.status(201).json({ quizId: quiz.quizId });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get a shared quiz by ID
+exports.getSharedQuiz = async (req, res) => {
+  try {
+    const quiz = await Quiz.findOne({ quizId: req.params.id });
+    if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
+    res.json({ quiz });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Submit a shared quiz result
+exports.submitSharedQuiz = async (req, res) => {
+  try {
+    const { answers, score, correctAnswers, incorrectAnswers, details } = req.body;
+    const quiz = await Quiz.findOne({ quizId: req.params.id });
+    if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
+    // Save to taker's history
+    const taker = await User.findById(req.user._id);
+    taker.quizHistory.push({
+      quizId: quiz.quizId,
+      date: new Date(),
+      score,
+      totalQuestions: quiz.details.length,
+      correctAnswers,
+      incorrectAnswers,
+      type: 'taken',
+      details
+    });
+    await taker.save();
+    // Save to creator's history (as 'shared-taken')
+    const creator = await User.findById(quiz.creator);
+    creator.quizHistory.push({
+      quizId: quiz.quizId,
+      date: new Date(),
+      score,
+      totalQuestions: quiz.details.length,
+      correctAnswers,
+      incorrectAnswers,
+      type: 'shared-taken',
+      details,
+      takenBy: taker._id
+    });
+    await creator.save();
+    res.json({ message: 'Quiz submitted and results saved.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   generateQuiz,
+  createSharedQuiz,
+  getSharedQuiz,
+  submitSharedQuiz,
 };

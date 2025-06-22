@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuiz } from "../context/QuizContext";
-import { Sparkles, FileText, Settings, Loader2, Image, File, Paperclip } from "lucide-react";
+import { Sparkles, FileText, Settings, Loader2, Image, File, Paperclip, Link as LinkIcon, CheckCircle } from "lucide-react";
 import Tesseract from 'tesseract.js';
 
 const API_BASE = process.env.REACT_APP_API_URL || "";
@@ -18,6 +18,9 @@ const QuizGenerator = () => {
   const pdfInputRef = useRef(null);
   const navigate = useNavigate();
   const { setQuizData, fetchQuizHistory } = useQuiz();
+  const [shareModal, setShareModal] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -76,7 +79,28 @@ const QuizGenerator = () => {
 
       await fetchQuizHistory();
       setQuizData(data.quiz);
-      navigate("/take");
+
+      // Save quiz as shared quiz
+      const res = await fetch(`${API_BASE}/api/quiz/create`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          details: data.quiz,
+          title: 'AI Generated Quiz',
+          description: ''
+        })
+      });
+      const result = await res.json();
+      if (res.ok && result.quizId) {
+        const link = `${window.location.origin}/take/${result.quizId}`;
+        setShareLink(link);
+        setShareModal(true);
+      } else {
+        throw new Error(result.error || 'Failed to create quiz');
+      }
     } catch (err) {
       console.error("Quiz generation error:", err);
       if (err.response?.status === 401) {
@@ -153,8 +177,44 @@ const QuizGenerator = () => {
     }
   };
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
   return (
     <section className="bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 py-20 min-h-[100vh] flex items-center justify-center px-4">
+      {/* Share Modal */}
+      {shareModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center border-2 border-blue-200">
+            <LinkIcon className="mx-auto text-blue-500 mb-2" size={40} />
+            <h2 className="text-2xl font-bold mb-2 text-gray-800">Quiz Created!</h2>
+            <p className="mb-4 text-gray-600">Share this link with anyone to let them take your quiz:</p>
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <input
+                type="text"
+                value={shareLink}
+                readOnly
+                className="flex-1 px-3 py-2 border rounded-lg bg-gray-100 text-gray-700 text-sm"
+              />
+              <button
+                onClick={handleCopy}
+                className={`px-3 py-2 rounded-lg font-semibold transition ${copied ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                {copied ? <><CheckCircle className="inline mr-1" size={18}/>Copied!</> : 'Copy Link'}
+              </button>
+            </div>
+            <button
+              onClick={() => setShareModal(false)}
+              className="mt-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       <div className="w-full max-w-3xl bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-10 relative overflow-hidden border border-white">
         <div className="absolute top-0 right-0 w-32 h-32 bg-pink-300 rounded-full blur-3xl opacity-30 animate-pulse"></div>
         <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-400 rounded-full blur-2xl opacity-20 animate-pulse"></div>

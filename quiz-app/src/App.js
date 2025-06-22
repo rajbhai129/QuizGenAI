@@ -14,6 +14,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import Profile from './components/Profile/Profile';
 import QuizTypeSelector from './components/QuizTypeSelector'; // Import the new component
+import TakeSharedQuiz from './components/TakeSharedQuiz';
 
 function App() {
   return (
@@ -68,6 +69,7 @@ function App() {
                     </ProtectedRoute>
                   } 
                 />
+                <Route path="/take/:quizId" element={<TakeSharedQuiz />} />
               </Routes>
             </main>
             <Footer />
