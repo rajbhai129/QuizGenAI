@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
 const TakeSharedQuiz = () => {
-  const { id } = useParams();
+  const { quizId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [quiz, setQuiz] = useState(null);
@@ -18,7 +18,7 @@ const TakeSharedQuiz = () => {
     const fetchQuiz = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/quiz/${id}`);
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/quiz/${quizId}`);
         const data = await res.json();
         if (res.ok && data.quiz) {
           setQuiz(data.quiz);
@@ -32,7 +32,7 @@ const TakeSharedQuiz = () => {
       setLoading(false);
     };
     fetchQuiz();
-  }, [id]);
+  }, [quizId]);
 
   const handleOptionChange = (qIdx, optIdx, type) => {
     setAnswers(prev => {
@@ -83,7 +83,7 @@ const TakeSharedQuiz = () => {
       };
     });
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/quiz/${id}/submit`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/quiz/${quizId}/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
