@@ -32,10 +32,10 @@ const upload = multer({
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://quiz-gen-ai-raj.vercel.app' // Your frontend URL
+    'https://quiz-gen-ai-raj.vercel.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With', 'Accept', 'Accept-Version', 'Content-Length', 'Content-MD5', 'Date', 'X-Api-Version'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
   optionsSuccessStatus: 200
 }));
