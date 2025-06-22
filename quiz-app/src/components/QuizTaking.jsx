@@ -1,83 +1,46 @@
-import React, { useEffect, useState } from 'react';
-import { useQuiz } from '../context/QuizContext';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 
 const QuizTaking = () => {
-  const { quizData, setUserAnswers } = useQuiz(); // <-- use quizData
-  const [responses, setResponses] = useState({});
+  const [quizId, setQuizId] = useState('');
   const navigate = useNavigate();
 
-  // Redirect to /create if quiz is not loaded
-  useEffect(() => {
-    if (!quizData || quizData.length === 0) {
-      navigate('/create');
+  const handleFindQuiz = () => {
+    if (quizId.trim()) {
+      navigate(`/take/${quizId.trim()}`);
     }
-  }, [quizData, navigate]);
-
-  const handleChange = (index, option) => {
-    const question = quizData[index];
-    const isMultiple = question.type === "multiple";
-    setResponses((prev) => {
-      const current = prev[index] || [];
-      if (isMultiple) {
-        const updated = current.includes(option)
-          ? current.filter((o) => o !== option)
-          : [...current, option];
-        return { ...prev, [index]: updated };
-      } else {
-        return { ...prev, [index]: [option] };
-      }
-    });
-  };
-
-  const handleSubmit = () => {
-    setUserAnswers(responses);
-    navigate('/result');
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6">Take Quiz</h2>
-      {quizData && quizData.length > 0 ? (
-        quizData.map((q, index) => (
-          <div key={index} className="mb-6">
-            <h3 className="font-semibold mb-2">
-              {index + 1}. {q.question}
-            </h3>
-            {q.options.map((opt, i) => {
-              const optionLabel =
-                opt.match(/^[a-d]\)/i)?.[0] || String.fromCharCode(97 + i) + ')';
-              return (
-                <div key={i} className="ml-4">
-                  <label>
-                    <input
-                      type={q.type === "multiple" ? 'checkbox' : 'radio'} // Changed to use q.type
-                      name={`question-${index}`}
-                      value={optionLabel}
-                      checked={responses[index]?.includes(optionLabel)}
-                      onChange={() => handleChange(index, optionLabel)}
-                      className="mr-2"
-                    />
-                    {opt}
-                  </label>
-                </div>
-              );
-            })}
-          </div>
-        ))
-      ) : (
-        <p>No quiz loaded.</p>
-      )}
-      {quizData && quizData.length > 0 && (
-        <div className="text-center">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 flex items-center justify-center px-4">
+      <div className="w-full max-w-lg bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 sm:p-10 border border-white text-center">
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">Take a Shared Quiz</h1>
+        <p className="text-gray-600 mb-8 text-lg">Enter the Quiz ID below to begin.</p>
+        
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleFindQuiz();
+          }}
+          className="flex items-center gap-2"
+        >
+          <input
+            type="text"
+            value={quizId}
+            onChange={(e) => setQuizId(e.target.value)}
+            placeholder="Enter Quiz ID..."
+            className="flex-1 w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 transition text-lg"
+          />
           <button
-            onClick={handleSubmit}
-            className="bg-green-600 text-white px-6 py-3 rounded hover:bg-green-700"
+            type="submit"
+            className="px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 font-semibold"
           >
-            Submit Quiz
+            <Search size={20} />
+            Find
           </button>
-        </div>
-      )}
+        </form>
+      </div>
     </div>
   );
 };
