@@ -144,7 +144,7 @@ function validateQuizStructure(quiz, totalQuestions, singleCorrect, multipleCorr
 }
 
 // Create a shared quiz
-exports.createSharedQuiz = async (req, res) => {
+const createSharedQuiz = async (req, res) => {
   try {
     const { details, title, description } = req.body;
     const quizId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -162,7 +162,7 @@ exports.createSharedQuiz = async (req, res) => {
 };
 
 // Get a shared quiz by ID
-exports.getSharedQuiz = async (req, res) => {
+const getSharedQuiz = async (req, res) => {
   try {
     const quiz = await Quiz.findOne({ quizId: req.params.id });
     if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
@@ -173,7 +173,7 @@ exports.getSharedQuiz = async (req, res) => {
 };
 
 // Submit a shared quiz result
-exports.submitSharedQuiz = async (req, res) => {
+const submitSharedQuiz = async (req, res) => {
   try {
     const { answers, score, correctAnswers, incorrectAnswers, details } = req.body;
     const quiz = await Quiz.findOne({ quizId: req.params.id });
@@ -215,5 +215,5 @@ module.exports = {
   generateQuiz,
   createSharedQuiz,
   getSharedQuiz,
-  submitSharedQuiz,
+  submitSharedQuiz
 };
