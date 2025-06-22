@@ -13,6 +13,19 @@ connectDB();
 
 const app = express();
 
+// Middleware
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://quiz-gen-ai-raj.vercel.app'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+}));
+app.use(express.json({ limit: '50mb' }));
+
 // Configure multer for PDF uploads
 const upload = multer({
   limits: {
@@ -27,19 +40,6 @@ const upload = multer({
     }
   }
 });
-
-// Middleware
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://quiz-gen-ai-raj.vercel.app'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  optionsSuccessStatus: 200
-}));
-app.use(express.json({ limit: '50mb' }));
 
 // Routes
 app.post('/api/extract-pdf', protect, upload.single('pdf'), (req, res, next) => {
