@@ -13,7 +13,7 @@ const QuizTypeSelector = () => {
         <div className="grid md:grid-cols-2 gap-8">
           {/* AI Quiz Generator */}
           <div 
-            onClick={() => navigate('/create')}
+            onClick={() => navigate('/create/ai')}
             className="bg-white p-8 rounded-xl shadow-lg cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1"
           >
             <div className="bg-blue-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
@@ -30,7 +30,7 @@ const QuizTypeSelector = () => {
 
           {/* Manual Quiz Creator */}
           <div 
-            onClick={() => navigate('/manual')}
+            onClick={() => navigate('/create/manual')}
             className="bg-white p-8 rounded-xl shadow-lg cursor-pointer hover:shadow-xl transition-all transform hover:-translate-y-1"
           >
             <div className="bg-purple-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">

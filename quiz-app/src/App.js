@@ -40,12 +40,20 @@ function App() {
                   path="/create" 
                   element={
                     <ProtectedRoute>
+                      <QuizTypeSelector />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/create/ai" 
+                  element={
+                    <ProtectedRoute>
                       <QuizGenerator />
                     </ProtectedRoute>
                   } 
                 />
                 <Route 
-                  path="/manual" 
+                  path="/create/manual" 
                   element={
                     <ProtectedRoute>
                       <ManualQuizCreator />
