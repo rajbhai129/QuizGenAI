@@ -6,7 +6,7 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Borde
 import { Download } from 'lucide-react';
 
 const QuizResult = () => {
-  const { quizData, userAnswers, fetchQuizHistory } = useQuiz();
+  const { quizData, userAnswers, fetchQuizHistory, sharedQuizResult, sharedQuizMeta, setSharedQuizResult, setSharedQuizMeta } = useQuiz();
   const navigate = useNavigate();
   const [userName, setUserName] = useState('');
 
@@ -74,6 +74,80 @@ const QuizResult = () => {
       saveResults();
     }
   }, [quizData, userAnswers, fetchQuizHistory]);
+
+  if (sharedQuizResult) {
+    // Show shared quiz result
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-2 text-center text-gray-800">
+          Quiz Results
+        </h1>
+        {sharedQuizMeta && (
+          <div className="text-center text-gray-500 mb-4">
+            <span>Quiz: <span className="font-semibold text-blue-600">{sharedQuizMeta.title || 'Shared Quiz'}</span></span>
+            {sharedQuizMeta.owner && <span className="ml-2">by <span className="font-semibold">{sharedQuizMeta.owner}</span></span>}
+            {sharedQuizMeta.createdAt && <span className="ml-2">on {new Date(sharedQuizMeta.createdAt).toLocaleString()}</span>}
+          </div>
+        )}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border border-gray-200">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-center">
+              <h2 className="text-xl font-semibold mb-2">Your Score</h2>
+              <p className="text-4xl font-bold text-blue-600">
+                {sharedQuizResult.score} / {sharedQuizResult.details.length}
+              </p>
+              <p className="text-gray-600 mt-2">
+                Correct: {sharedQuizResult.correctAnswers} | Incorrect: {sharedQuizResult.incorrectAnswers}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+          <h2 className="text-xl font-semibold mb-4">Question-wise Breakdown</h2>
+          {sharedQuizResult.details.map((result, index) => (
+            <div
+              key={index}
+              className={`p-4 mb-4 rounded-lg border-l-4 ${
+                result.isCorrect
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-red-500 bg-red-50'
+              }`}
+            >
+              <h3 className="font-semibold text-gray-800">
+                {index + 1}. {result.question} ({result.type})
+              </h3>
+              <p className="text-gray-700 mt-1">
+                <span className="font-medium">Your Answer:</span> {result.userAnswer}
+              </p>
+              <p className="text-gray-700">
+                <span className="font-medium">Correct Answer:</span> {result.correctAnswer}
+              </p>
+              <p className="text-gray-700">
+                <span className="font-medium">Score:</span> {result.score} / 1
+              </p>
+              <p className={`mt-1 font-medium ${
+                result.isCorrect ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {result.isCorrect ? 'Correct' : 'Incorrect'}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="text-center mt-6">
+          <button
+            onClick={() => {
+              setSharedQuizResult(null);
+              setSharedQuizMeta(null);
+              navigate("/");
+            }}
+            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!quizData || quizData.length === 0) {
     return (

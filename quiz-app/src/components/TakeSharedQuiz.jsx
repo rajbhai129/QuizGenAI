@@ -2,17 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { useQuiz } from '../context/QuizContext';
 
 const TakeSharedQuiz = () => {
   const { quizId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { setSharedQuizResult, setSharedQuizMeta } = useQuiz();
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [owner, setOwner] = useState(null);
+  const [createdAt, setCreatedAt] = useState(null);
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -23,6 +27,13 @@ const TakeSharedQuiz = () => {
         if (res.ok && data.quiz) {
           setQuiz(data.quiz);
           setAnswers(Array(data.quiz.details.length).fill([]));
+          setCreatedAt(data.quiz.createdAt);
+          // Fetch owner username
+          if (data.quiz.creator) {
+            const userRes = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/user/${data.quiz.creator}`);
+            const userData = await userRes.json();
+            if (userRes.ok && userData.username) setOwner(userData.username);
+          }
         } else {
           setError(data.error || 'Quiz not found');
         }
@@ -112,22 +123,27 @@ const TakeSharedQuiz = () => {
       <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 flex items-center justify-center px-4">
         <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-xl w-full border border-blue-100 text-center">
           <CheckCircle className="mx-auto text-green-500 mb-2" size={48} />
-          <h2 className="text-3xl font-bold mb-2 text-gray-800">Quiz Submitted!</h2>
+          <h2 className="text-3xl font-bold mb-2 text-gray-800">Thank you for taking the quiz!</h2>
           <p className="mb-4 text-lg text-gray-600">You scored <span className="font-bold text-blue-600">{result.score} / {quiz.details.length}</span></p>
           <div className="mb-4">
             <p className="text-green-600 font-semibold">Correct: {result.correctAnswers}</p>
             <p className="text-red-500 font-semibold">Incorrect: {result.incorrectAnswers}</p>
           </div>
-          <div className="text-left max-h-64 overflow-y-auto border-t pt-4 mt-4">
-            {result.details.map((d, i) => (
-              <div key={i} className="mb-3">
-                <p className="font-medium">{i + 1}. {d.question}</p>
-                <p className={`text-sm ${d.isCorrect ? 'text-green-600' : 'text-red-600'}`}>Your Answer: {d.userAnswer}</p>
-                <p className="text-sm text-gray-600">Correct Answer: {d.correctAnswer}</p>
-              </div>
-            ))}
-          </div>
-          <button onClick={() => navigate('/')} className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Back to Home</button>
+          <button
+            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            onClick={() => {
+              setSharedQuizResult(result);
+              setSharedQuizMeta({
+                title: quiz.title,
+                owner,
+                createdAt
+              });
+              navigate('/result');
+            }}
+          >
+            See Detailed Result
+          </button>
+          <button onClick={() => navigate('/')} className="mt-4 ml-4 px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">Back to Home</button>
         </div>
       </div>
     );
@@ -136,7 +152,11 @@ const TakeSharedQuiz = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 flex items-center justify-center px-4">
       <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-xl w-full border border-blue-100">
-        <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">{quiz.title || 'Shared Quiz'}</h2>
+        <h2 className="text-3xl font-bold mb-2 text-center text-gray-800">{quiz.title || 'Shared Quiz'}</h2>
+        <div className="text-center text-gray-500 mb-4">
+          {owner && <span>Created by <span className="font-semibold text-blue-600">{owner}</span></span>}
+          {createdAt && <span className="ml-2">on {new Date(createdAt).toLocaleString()}</span>}
+        </div>
         <form onSubmit={e => { e.preventDefault(); handleSubmit(); }}>
           {quiz.details.map((q, qIdx) => (
             <div key={qIdx} className="mb-6">

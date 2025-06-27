@@ -8,6 +8,8 @@ export const QuizProvider = ({ children }) => {
   const [quizData, setQuizData] = useState(null); // Stores generated quiz
   const [userAnswers, setUserAnswers] = useState([]); // Stores user's selected answers
   const [quizHistory, setQuizHistory] = useState({ taken: [], created: [] });
+  const [sharedQuizResult, setSharedQuizResult] = useState(null);
+  const [sharedQuizMeta, setSharedQuizMeta] = useState(null);
 
   const fetchQuizHistory = useCallback(async () => {
     try {
@@ -38,6 +40,10 @@ export const QuizProvider = ({ children }) => {
         resetQuiz,
         quizHistory,
         fetchQuizHistory,
+        sharedQuizResult,
+        setSharedQuizResult,
+        sharedQuizMeta,
+        setSharedQuizMeta,
       }}
     >
       {children}
