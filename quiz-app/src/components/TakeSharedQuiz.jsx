@@ -104,7 +104,13 @@ const TakeSharedQuiz = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        setResult({ score, correctAnswers, incorrectAnswers, details });
+        setSharedQuizResult({ score, correctAnswers, incorrectAnswers, details });
+        setSharedQuizMeta({
+          title: quiz.title,
+          owner,
+          createdAt
+        });
+        navigate('/result');
       } else {
         setError(data.error || 'Failed to submit quiz');
       }
@@ -117,37 +123,6 @@ const TakeSharedQuiz = () => {
   if (loading) return <div className="flex justify-center items-center min-h-[60vh]"><Loader2 className="animate-spin" size={32} /></div>;
   if (error) return <div className="text-center text-red-500 py-10">{error}</div>;
   if (!quiz) return null;
-
-  if (result) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 flex items-center justify-center px-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-xl w-full border border-blue-100 text-center">
-          <CheckCircle className="mx-auto text-green-500 mb-2" size={48} />
-          <h2 className="text-3xl font-bold mb-2 text-gray-800">Thank you for taking the quiz!</h2>
-          <p className="mb-4 text-lg text-gray-600">You scored <span className="font-bold text-blue-600">{result.score} / {quiz.details.length}</span></p>
-          <div className="mb-4">
-            <p className="text-green-600 font-semibold">Correct: {result.correctAnswers}</p>
-            <p className="text-red-500 font-semibold">Incorrect: {result.incorrectAnswers}</p>
-          </div>
-          <button
-            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            onClick={() => {
-              setSharedQuizResult(result);
-              setSharedQuizMeta({
-                title: quiz.title,
-                owner,
-                createdAt
-              });
-              navigate('/result');
-            }}
-          >
-            See Detailed Result
-          </button>
-          <button onClick={() => navigate('/')} className="mt-4 ml-4 px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">Back to Home</button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 flex items-center justify-center px-4">
