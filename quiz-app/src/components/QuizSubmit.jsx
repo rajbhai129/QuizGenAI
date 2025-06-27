@@ -4,14 +4,29 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
 
 const QuizSubmit = () => {
-  const { sharedQuizResult, sharedQuizMeta } = useQuiz();
+  const { sharedQuizResult, sharedQuizMeta, setSharedQuizResult, setSharedQuizMeta } = useQuiz();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!sharedQuizResult) {
-      navigate('/');
+      const localResult = localStorage.getItem('sharedQuizResult');
+      const localMeta = localStorage.getItem('sharedQuizMeta');
+
+      if (localResult && localMeta) {
+        setSharedQuizResult(JSON.parse(localResult));
+        setSharedQuizMeta(JSON.parse(localMeta));
+      } else {
+        navigate('/');
+      }
     }
-  }, [sharedQuizResult, navigate]);
+  }, [sharedQuizResult, navigate, setSharedQuizResult, setSharedQuizMeta]);
+
+  useEffect(() => {
+    return () => {
+      localStorage.removeItem('sharedQuizResult');
+      localStorage.removeItem('sharedQuizMeta');
+    };
+  }, []);
 
   if (!sharedQuizResult) return null;
 
@@ -38,10 +53,15 @@ const QuizSubmit = () => {
         >
           See Detailed Result
         </button>
-        <button onClick={() => navigate('/')} className="mt-4 ml-4 px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">Back to Home</button>
+        <button
+          onClick={() => navigate('/')}
+          className="mt-4 ml-4 px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
+        >
+          Back to Home
+        </button>
       </div>
     </div>
   );
 };
 
-export default QuizSubmit; 
+export default QuizSubmit;
