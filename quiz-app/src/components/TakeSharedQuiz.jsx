@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useQuiz } from '../context/QuizContext';
 
 const TakeSharedQuiz = () => {
@@ -13,7 +13,6 @@ const TakeSharedQuiz = () => {
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [owner, setOwner] = useState(null);
   const [createdAt, setCreatedAt] = useState(null);
@@ -28,7 +27,6 @@ const TakeSharedQuiz = () => {
           setQuiz(data.quiz);
           setAnswers(Array(data.quiz.details.length).fill([]));
           setCreatedAt(data.quiz.createdAt);
-          // Fetch owner username
           if (data.quiz.creator) {
             const userRes = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/user/${data.quiz.creator}`);
             const userData = await userRes.json();
@@ -67,7 +65,6 @@ const TakeSharedQuiz = () => {
       return;
     }
     setSubmitting(true);
-    // Calculate score and details
     let score = 0, correctAnswers = 0, incorrectAnswers = 0;
     const details = quiz.details.map((q, idx) => {
       const userAns = answers[idx] || [];
@@ -93,6 +90,7 @@ const TakeSharedQuiz = () => {
         type: q.type
       };
     });
+
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/quiz/${quizId}/submit`, {
         method: 'POST',
@@ -104,12 +102,16 @@ const TakeSharedQuiz = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        setSharedQuizResult({ score, correctAnswers, incorrectAnswers, details });
-        setSharedQuizMeta({
-          title: quiz.title,
-          owner,
-          createdAt
-        });
+        const quizResult = { score, correctAnswers, incorrectAnswers, details };
+        const quizMeta = { title: quiz.title, owner, createdAt };
+
+        setSharedQuizResult(quizResult);
+        setSharedQuizMeta(quizMeta);
+
+        // Save to localStorage
+        localStorage.setItem('sharedQuizResult', JSON.stringify(quizResult));
+        localStorage.setItem('sharedQuizMeta', JSON.stringify(quizMeta));
+
         navigate('/submit');
       } else {
         setError(data.error || 'Failed to submit quiz');
@@ -165,4 +167,4 @@ const TakeSharedQuiz = () => {
   );
 };
 
-export default TakeSharedQuiz; 
+export default TakeSharedQuiz;
