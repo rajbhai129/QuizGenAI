@@ -51,7 +51,7 @@ app.post('/api/extract-pdf', protect, upload.single('pdf'), (req, res, next) => 
 });
 
 app.use('/api/auth', authRoutes);
-app.use('/api/quiz', protect, quizRoutes); // Already protected
+app.use('/api/quiz', quizRoutes); // Remove global protect
 
 // Error handling for undefined routes
 app.use((req, res, next) => {
