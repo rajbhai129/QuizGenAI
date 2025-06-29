@@ -11,8 +11,7 @@ const { extractPdf } = require('./controllers/pdfController');
 // Load environment variables
 dotenv.config();
 
-//vjjfjfjcjn
-// Connect to MongoDBhhh
+// Connect to MongoDB
 connectDB();
 
 const app = express();
@@ -59,6 +58,8 @@ const upload = multer({
 // -------------------------
 // Routes
 // -------------------------
+console.log('Setting up routes...');
+
 app.post('/api/extract-pdf', protect, upload.single('pdf'), (req, res, next) => {
   try {
     extractPdf(req, res);
@@ -67,8 +68,13 @@ app.post('/api/extract-pdf', protect, upload.single('pdf'), (req, res, next) => 
   }
 });
 
+console.log('Setting up auth routes...');
 app.use('/api/auth', authRoutes);
+
+console.log('Setting up quiz routes...');
 app.use('/api/quiz', quizRoutes); // All quiz-related routes
+
+console.log('Routes setup complete');
 
 // -------------------------
 // 404 Handler
@@ -85,6 +91,7 @@ app.use((req, res, next) => {
 // -------------------------
 app.use((err, req, res, next) => {
   console.error('Server Error:', err);
+  console.error('Error Stack:', err.stack);
 
   if (err.name === 'MongoError' || err.name === 'MongoServerError') {
     return res.status(500).json({

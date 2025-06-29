@@ -8,15 +8,7 @@
   ],
   "routes": [
     {
-      "src": "/api/auth/(.*)",
-      "dest": "index.js"
-    },
-    {
-      "src": "/api/quiz/(.*)",
-      "dest": "index.js"
-    },
-    {
-      "src": "/api/extract-pdf",
+      "src": "/api/(.*)",
       "dest": "index.js"
     },
     {

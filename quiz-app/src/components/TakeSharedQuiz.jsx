@@ -21,7 +21,7 @@ const TakeSharedQuiz = () => {
     const fetchQuiz = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/quiz/shared/${quizId}`);
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/quiz/shared-quiz/${quizId}`);
         const data = await res.json();
         if (res.ok && data.quiz) {
           setQuiz(data.quiz);
@@ -92,7 +92,7 @@ const TakeSharedQuiz = () => {
     });
 
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/quiz/shared/${quizId}/submit`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/quiz/shared-quiz/${quizId}/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
