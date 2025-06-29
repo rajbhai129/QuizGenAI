@@ -103,7 +103,14 @@ app.use((err, req, res, next) => {
   if (err.message && err.message.includes('Missing parameter name')) {
     return res.status(400).json({
       error: 'Route Error',
-      message: 'Invalid route configuration'
+      message: 'Invalid route configuration - check route parameters'
+    });
+  }
+
+  if (err.message && err.message.includes('path-to-regexp')) {
+    return res.status(400).json({
+      error: 'Route Configuration Error',
+      message: 'Invalid route pattern detected'
     });
   }
 
@@ -122,4 +129,3 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
-//temp change for coomit

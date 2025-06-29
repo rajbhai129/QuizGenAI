@@ -13,7 +13,7 @@ router.post('/generate', protect, generateQuiz);
 
 // Shared quiz routes
 router.post('/create', protect, createSharedQuiz);
-router.get('/:id', getSharedQuiz);
-router.post('/:id/submit', protect, submitSharedQuiz);
+router.get('/shared/:quizId', getSharedQuiz);
+router.post('/shared/:quizId/submit', protect, submitSharedQuiz);
 
 module.exports = router;
