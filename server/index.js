@@ -8,13 +8,19 @@ const { protect } = require('./middleware/auth');
 const multer = require('multer');
 const { extractPdf } = require('./controllers/pdfController');
 
+// Load environment variables
 dotenv.config();
+
+//vjjfjfjcjn
+// Connect to MongoDBhhh
 connectDB();
 
 const app = express();
 
-// Middleware
-app.use(cors({
+// -------------------------
+// ✅ CORS Configuration
+// -------------------------
+const corsOptions = {
   origin: [
     'http://localhost:3000',
     'https://quiz-gen-ai-raj.vercel.app'
@@ -22,17 +28,26 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  optionsSuccessStatus: 200
-}));
+  optionsSuccessStatus: 204, // For legacy browsers
+  preflightContinue: false
+};
+
+app.use(cors(corsOptions));
+
+// 🛑 Make sure this line is BEFORE all routes
+app.options('*', cors(corsOptions));
+
+// -------------------------
+// Middleware
+// -------------------------
 app.use(express.json({ limit: '50mb' }));
 
-// Configure multer for PDF uploads
+// -------------------------
+// PDF Upload Config (Multer)
+// -------------------------
 const upload = multer({
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (req, file, cb) => {
-    // Accept only PDFs
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
@@ -41,7 +56,9 @@ const upload = multer({
   }
 });
 
+// -------------------------
 // Routes
+// -------------------------
 app.post('/api/extract-pdf', protect, upload.single('pdf'), (req, res, next) => {
   try {
     extractPdf(req, res);
@@ -51,9 +68,11 @@ app.post('/api/extract-pdf', protect, upload.single('pdf'), (req, res, next) => 
 });
 
 app.use('/api/auth', authRoutes);
-app.use('/api/quiz', quizRoutes); // Remove global protect
+app.use('/api/quiz', quizRoutes); // All quiz-related routes
 
-// Error handling for undefined routes
+// -------------------------
+// 404 Handler
+// -------------------------
 app.use((req, res, next) => {
   res.status(404).json({
     error: 'Not Found',
@@ -61,12 +80,13 @@ app.use((req, res, next) => {
   });
 });
 
-// Global error handler
+// -------------------------
+// Global Error Handler
+// -------------------------
 app.use((err, req, res, next) => {
   console.error('Server Error:', err);
-  
+
   if (err.name === 'MongoError' || err.name === 'MongoServerError') {
-    console.error('MongoDB Error:', err);
     return res.status(500).json({
       error: 'Database Error',
       message: process.env.NODE_ENV === 'production' ? 'Database operation failed' : err.message
@@ -80,23 +100,26 @@ app.use((err, req, res, next) => {
     });
   }
 
-  // Handle path-to-regexp errors
   if (err.message && err.message.includes('Missing parameter name')) {
     return res.status(400).json({
       error: 'Route Error',
       message: 'Invalid route configuration'
     });
   }
-  
+
   res.status(500).json({
     error: 'Internal Server Error',
     message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
   });
 });
 
+// -------------------------
+// Start Server
+// -------------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
 module.exports = app;
+//temp change for coomit
