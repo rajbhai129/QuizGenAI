@@ -164,7 +164,11 @@ const createSharedQuiz = async (req, res) => {
 // Get a shared quiz by ID
 const getSharedQuiz = async (req, res) => {
   try {
-    const quiz = await Quiz.findOne({ quizId: req.params.quizId });
+    const { quizId } = req.query;
+    if (!quizId) {
+      return res.status(400).json({ error: 'Quiz ID is required' });
+    }
+    const quiz = await Quiz.findOne({ quizId });
     if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
     res.json({ quiz });
   } catch (error) {
@@ -175,8 +179,12 @@ const getSharedQuiz = async (req, res) => {
 // Submit a shared quiz result
 const submitSharedQuiz = async (req, res) => {
   try {
+    const { quizId } = req.query;
+    if (!quizId) {
+      return res.status(400).json({ error: 'Quiz ID is required' });
+    }
     const { answers, score, correctAnswers, incorrectAnswers, details } = req.body;
-    const quiz = await Quiz.findOne({ quizId: req.params.quizId });
+    const quiz = await Quiz.findOne({ quizId });
     if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
     // Save to taker's history
     const taker = await User.findById(req.user._id);

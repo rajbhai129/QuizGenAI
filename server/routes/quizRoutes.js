@@ -12,9 +12,11 @@ const { protect } = require('../middleware/auth');
 // AI Quiz Generation
 router.post('/generate', protect, generateQuiz);
 
-// Shared Quiz Management - using more specific routes
+// Create shared quiz
 router.post('/create', protect, createSharedQuiz);
-router.get('/shared-quiz/:quizId', getSharedQuiz);
-router.post('/shared-quiz/:quizId/submit', protect, submitSharedQuiz);
+
+// Shared Quiz Management - using query parameters instead of route parameters
+router.get('/shared', getSharedQuiz);
+router.post('/shared/submit', protect, submitSharedQuiz);
 
 module.exports = router;
