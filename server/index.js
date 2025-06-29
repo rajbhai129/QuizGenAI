@@ -22,7 +22,8 @@ const app = express();
 const corsOptions = {
   origin: [
     'http://localhost:3000',
-    'https://quiz-gen-ai-raj.vercel.app'
+    'https://quiz-gen-ai-raj.vercel.app',
+    'https://quiz-gen-ai-sooty.vercel.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
