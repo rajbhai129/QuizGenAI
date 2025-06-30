@@ -10,6 +10,22 @@ const QuizResult = () => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState('');
 
+  // Load from localStorage if context is empty
+  useEffect(() => {
+    if (!sharedQuizResult) {
+      const storedResult = localStorage.getItem('sharedQuizResult');
+      if (storedResult) {
+        setSharedQuizResult(JSON.parse(storedResult));
+      }
+    }
+    if (!sharedQuizMeta) {
+      const storedMeta = localStorage.getItem('sharedQuizMeta');
+      if (storedMeta) {
+        setSharedQuizMeta(JSON.parse(storedMeta));
+      }
+    }
+  }, [sharedQuizResult, sharedQuizMeta, setSharedQuizResult, setSharedQuizMeta]);
+
   useEffect(() => {
     if (quizData && quizData.length > 0) {
       const saveResults = async () => {

@@ -110,6 +110,9 @@ const TakeSharedQuiz = () => {
           owner,
           createdAt
         });
+        // Store in localStorage for persistence
+        localStorage.setItem('sharedQuizResult', JSON.stringify({ score, correctAnswers, incorrectAnswers, details }));
+        localStorage.setItem('sharedQuizMeta', JSON.stringify({ title: quiz.title, owner, createdAt }));
         navigate(`/thankyou/${quizId}`);
       } else {
         setError(data.error || 'Failed to submit quiz');
