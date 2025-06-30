@@ -110,7 +110,7 @@ const TakeSharedQuiz = () => {
           owner,
           createdAt
         });
-        navigate('/result');
+        navigate(`/thankyou/${quizId}`);
       } else {
         setError(data.error || 'Failed to submit quiz');
       }

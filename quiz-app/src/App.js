@@ -15,6 +15,7 @@ import { AuthProvider } from './context/AuthContext';
 import Profile from './components/Profile/Profile';
 import QuizTypeSelector from './components/QuizTypeSelector'; // Import the new component
 import TakeSharedQuiz from './components/TakeSharedQuiz';
+import ThankYou from './components/ThankYou';
 
 function App() {
   return (
@@ -78,6 +79,7 @@ function App() {
                   } 
                 />
                 <Route path="/take/:quizId" element={<TakeSharedQuiz />} />
+                <Route path="/thankyou/:quizId" element={<ThankYou />} />
               </Routes>
             </main>
             <Footer />
