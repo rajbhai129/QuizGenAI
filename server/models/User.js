@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema({
     incorrectAnswers: Number,
     type: {
       type: String,
-      enum: ['taken', 'created'],
+      enum: ['taken', 'created', 'shared-taken'],
       default: 'taken'
     },
     details: [{

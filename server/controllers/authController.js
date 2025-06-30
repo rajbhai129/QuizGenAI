@@ -105,10 +105,21 @@ const updateAvatar = async (req, res) => {
   }
 };
 
+const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('username');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ username: user.username });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   register,
   login,
   saveQuizResult,
   getQuizHistory,
-  updateAvatar
+  updateAvatar,
+  getUserById
 };
