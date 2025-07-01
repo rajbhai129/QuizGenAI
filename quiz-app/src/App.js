@@ -16,6 +16,7 @@ import Profile from './components/Profile/Profile';
 import QuizTypeSelector from './components/QuizTypeSelector'; // Import the new component
 import TakeSharedQuiz from './components/TakeSharedQuiz';
 import ThankYou from './components/ThankYou';
+import AdminPanel from './components/AdminPanel';
 
 function App() {
   return (
@@ -80,6 +81,14 @@ function App() {
                 />
                 <Route path="/take/:quizId" element={<TakeSharedQuiz />} />
                 <Route path="/thankyou/:quizId" element={<ThankYou />} />
+                <Route 
+                  path="/admin" 
+                  element={
+                    <ProtectedRoute>
+                      <AdminPanel />
+                    </ProtectedRoute>
+                  }
+                />
               </Routes>
             </main>
             <Footer />

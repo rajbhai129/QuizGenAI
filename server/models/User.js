@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  isAdmin: {
+    type: Boolean,
+    default: false
+  },
   quizHistory: [{
     quizId: String,
     date: Date,

@@ -7,6 +7,7 @@ const quizRoutes = require('./routes/quizRoutes');
 const { protect } = require('./middleware/auth');
 const multer = require('multer');
 const { extractPdf } = require('./controllers/pdfController');
+const adminRoutes = require('./routes/adminRoutes');
 
 dotenv.config();
 connectDB();
@@ -52,6 +53,7 @@ app.post('/api/extract-pdf', protect, upload.single('pdf'), (req, res, next) => 
 
 app.use('/api/auth', authRoutes);
 app.use('/api/quiz', quizRoutes); // Remove global protect
+app.use('/api/admin', adminRoutes);
 
 // Error handling for undefined routes
 app.use((req, res, next) => {
