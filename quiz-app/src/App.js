@@ -17,6 +17,7 @@ import QuizTypeSelector from './components/QuizTypeSelector'; // Import the new 
 import TakeSharedQuiz from './components/TakeSharedQuiz';
 import ThankYou from './components/ThankYou';
 import AdminPanel from './components/AdminPanel';
+import About from './components/About';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <main className="flex-grow">
               <Routes>
                 <Route path="/" element={<LandingHero />} />
+                <Route path="/about" element={<About />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route 
