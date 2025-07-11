@@ -4,6 +4,14 @@ const Quiz = require('../models/Quiz');
 
 const generateQuiz = async (req, res) => {
   try {
+    // Restrict guest user from creating more than 2 quizzes
+    if (req.user.email === 'guest@quizgenai.com') {
+      const user = await User.findById(req.user._id);
+      const guestCreated = user.quizHistory.filter(q => q.type === 'created').length;
+      if (guestCreated >= 2) {
+        return res.status(403).json({ error: 'Guest account can only create 2 quizzes. Please register for unlimited access.' });
+      }
+    }
     const { content, totalQuestions, singleCorrect, multipleCorrect, optionsPerQuestion } = req.body;
 
     // Input validation
@@ -146,6 +154,14 @@ function validateQuizStructure(quiz, totalQuestions, singleCorrect, multipleCorr
 // Create a shared quiz
 const createSharedQuiz = async (req, res) => {
   try {
+    // Restrict guest user from creating more than 2 quizzes
+    if (req.user.email === 'guest@quizgenai.com') {
+      const user = await User.findById(req.user._id);
+      const guestCreated = user.quizHistory.filter(q => q.type === 'created').length;
+      if (guestCreated >= 2) {
+        return res.status(403).json({ error: 'Guest account can only create 2 quizzes. Please register for unlimited access.' });
+      }
+    }
     const { details, title, description } = req.body;
     const quizId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
     const quiz = await Quiz.create({

@@ -92,6 +92,10 @@ const getQuizHistory = async (req, res) => {
 
 const updateAvatar = async (req, res) => {
   try {
+    // Restrict guest user
+    if (req.user.email === 'guest@quizgenai.com') {
+      return res.status(403).json({ error: 'Guest account cannot update avatar. Please register to personalize your profile.' });
+    }
     const { avatar } = req.body; // Expecting a Base64 string
     if (!avatar) {
       return res.status(400).json({ error: 'Avatar data is required.' });
