@@ -156,6 +156,7 @@ const ManualQuizCreator = () => {
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center border-2 border-blue-200">
             <LinkIcon className="mx-auto text-blue-500 mb-2" size={40} />
             <h2 className="text-2xl font-bold mb-2 text-gray-800">Quiz Created!</h2>
+            <p className="mb-2 text-blue-700 font-semibold text-lg">Send this link to your friends to let them take your quiz!</p>
             <p className="mb-4 text-gray-600">Share this link with anyone to let them take your quiz:</p>
             <div className="flex items-center justify-center gap-2 mb-4">
               <input
