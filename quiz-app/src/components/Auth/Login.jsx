@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, ShieldCheck } from 'lucide-react';
+import { LogIn, ShieldCheck, User } from 'lucide-react';
+
+const GUEST_EMAIL = 'guest@quizgenai.com';
+const GUEST_PASSWORD = 'guest123';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +12,7 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [guestLoading, setGuestLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -45,6 +49,37 @@ const Login = () => {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setGuestLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: GUEST_EMAIL, password: GUEST_PASSWORD }),
+        mode: 'cors',
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Guest login failed');
+      }
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify({
+        id: data._id,
+        username: data.username,
+        email: data.email
+      }));
+      navigate('/');
+    } catch (err) {
+      setError('Guest login failed. Please try again later.');
+    } finally {
+      setGuestLoading(false);
     }
   };
 
@@ -106,6 +141,20 @@ const Login = () => {
               </p>
             </div>
           </form>
+          {/* Try as Guest */}
+          <div className="mt-8 text-center">
+            <button
+              type="button"
+              onClick={handleGuestLogin}
+              disabled={guestLoading}
+              className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-lg font-bold bg-gradient-to-r from-gray-400 via-gray-500 to-gray-700 text-white shadow-lg hover:scale-105 hover:shadow-2xl transition-all duration-200 mb-2"
+              title="Try creating and taking quizzes without registration!"
+            >
+              <User className="h-6 w-6 mr-1" />
+              {guestLoading ? 'Loading Guest...' : 'Try as Guest'}
+            </button>
+            <p className="text-xs text-gray-500">Try creating and taking quizzes without registration! Some features may be limited.</p>
+          </div>
         </div>
       </div>
     </section>
