@@ -20,7 +20,7 @@ const QuizGenerator = () => {
   const fileInputRef = useRef(null);
   const pdfInputRef = useRef(null);
   const navigate = useNavigate();
-  const { setQuizData, fetchQuizHistory } = useQuiz();
+  const { quizData, setQuizData, fetchQuizHistory } = useQuiz();
   const { user } = useAuth();
   const [shareModal, setShareModal] = useState(false);
   const [shareLink, setShareLink] = useState('');
