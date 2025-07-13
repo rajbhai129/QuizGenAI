@@ -160,28 +160,96 @@ const ManualQuizCreator = () => {
       {/* Share Modal */}
       {shareModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center border-2 border-blue-200">
-            <LinkIcon className="mx-auto text-blue-500 mb-2" size={40} />
-            <h2 className="text-2xl font-bold mb-2 text-gray-800">Quiz Created!</h2>
-            <p className="mb-2 text-blue-700 font-semibold text-lg">Send this link to your friends to let them take your quiz!</p>
-            <p className="mb-4 text-gray-600">Share this link with anyone to let them take your quiz:</p>
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <input
-                type="text"
-                value={shareLink}
-                readOnly
-                className="flex-1 px-3 py-2 border rounded-lg bg-gray-100 text-gray-700 text-sm"
-              />
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full text-center border-2 border-blue-200">
+            <div className="bg-green-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <LinkIcon className="text-green-600" size={32} />
+            </div>
+            <h2 className="text-2xl font-bold mb-2 text-gray-800">🎉 Quiz Created Successfully!</h2>
+            <p className="mb-6 text-gray-600">What would you like to do with your quiz?</p>
+            
+            {/* Quiz Stats */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <h3 className="font-semibold text-gray-800 mb-2">📊 Quiz Summary</h3>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">{questions.length}</div>
+                  <div className="text-xs text-gray-600">Questions</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {questions.filter(q => q.type === 'single').length}
+                  </div>
+                  <div className="text-xs text-gray-600">Single Choice</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {questions.filter(q => q.type === 'multiple').length}
+                  </div>
+                  <div className="text-xs text-gray-600">Multiple Choice</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="space-y-4 mb-6">
+              {/* Take Quiz Now */}
               <button
-                onClick={handleCopy}
-                className={`px-3 py-2 rounded-lg font-semibold transition ${copied ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                onClick={() => {
+                  setShareModal(false);
+                  navigate('/take');
+                }}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-4 px-6 rounded-xl hover:scale-105 transition-all duration-200 shadow-lg flex items-center justify-center gap-2"
               >
-                {copied ? <><CheckCircle className="inline mr-1" size={18}/>Copied!</> : 'Copy Link'}
+                🎯 Take Quiz Now
+                <span className="text-sm opacity-90">(Start immediately)</span>
+              </button>
+              
+              {/* Share Link */}
+              <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                <h3 className="font-semibold text-blue-800 mb-2">📤 Share with Others</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={shareLink}
+                    readOnly
+                    className="flex-1 px-3 py-2 border rounded-lg bg-white text-gray-700 text-sm"
+                  />
+                  <button
+                    onClick={handleCopy}
+                    className={`px-4 py-2 rounded-lg font-semibold transition ${copied ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                  >
+                    {copied ? <><CheckCircle className="inline mr-1" size={16}/>Copied!</> : 'Copy'}
+                  </button>
+                </div>
+                <p className="text-xs text-blue-600">Share this link with friends, students, or colleagues</p>
+              </div>
+            </div>
+            
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <button
+                onClick={() => {
+                  setShareModal(false);
+                  navigate('/profile');
+                }}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition"
+              >
+                📊 View History
+              </button>
+              <button
+                onClick={() => {
+                  setShareModal(false);
+                  navigate('/create');
+                }}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition"
+              >
+                ➕ Create Another
               </button>
             </div>
+            
             <button
               onClick={() => setShareModal(false)}
-              className="mt-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+              className="w-full text-gray-500 hover:text-gray-700 transition py-2"
             >
               Close
             </button>
@@ -342,6 +410,22 @@ const ManualQuizCreator = () => {
               </button>
             </div>
           </div>
+          
+          {/* Quick Take Quiz Button (when questions are ready) */}
+          {questions.length > 0 && questions.every(q => q.question.trim() && q.correctAnswers.length > 0) && (
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => {
+                  setQuizData(questions);
+                  navigate('/take');
+                }}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-all duration-200 flex justify-center items-center text-lg"
+              >
+                🎯 Take This Quiz Now
+              </button>
+              <p className="text-sm text-gray-500 mt-2">Test your quiz before sharing!</p>
+            </div>
+          )}
         </div>
       </div>
     </section>
