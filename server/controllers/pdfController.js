@@ -6,10 +6,13 @@ const extractPdf = async (req, res) => {
       return res.status(400).json({ error: 'No PDF file provided' });
     }
 
-    // PDF parsing options
+    // Enhanced PDF parsing options for multilingual support
     const options = {
       max: 0, // No limit on pages
-      version: 'v2.0.550'
+      version: 'v2.0.550',
+      // Better text extraction for multilingual content
+      normalizeWhitespace: true,
+      disableCombineTextItems: false
     };
 
     try {
@@ -20,13 +23,29 @@ const extractPdf = async (req, res) => {
         throw new Error('No readable text found in PDF');
       }
 
-      // Clean up extracted text
+      // Enhanced text cleaning for multilingual support
       const cleanText = data.text
         .replace(/\r\n/g, '\n') // Normalize line endings
         .replace(/\n{3,}/g, '\n\n') // Remove excess blank lines
+        .replace(/\u0000/g, '') // Remove null characters
+        .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces
+        .replace(/\s+/g, ' ') // Normalize whitespace
         .trim();
 
-      res.json({ text: cleanText });
+      // Check if text contains Hindi characters
+      const hasHindiText = /[\u0900-\u097F]/.test(cleanText);
+      const hasEnglishText = /[a-zA-Z]/.test(cleanText);
+      
+      console.log(`PDF extracted: ${hasHindiText ? 'Hindi' : ''}${hasHindiText && hasEnglishText ? ' + ' : ''}${hasEnglishText ? 'English' : ''} text detected`);
+
+      res.json({ 
+        text: cleanText,
+        languageInfo: {
+          hasHindi: hasHindiText,
+          hasEnglish: hasEnglishText,
+          isMultilingual: hasHindiText && hasEnglishText
+        }
+      });
     } catch (pdfError) {
       console.error('PDF parsing error:', pdfError);
       

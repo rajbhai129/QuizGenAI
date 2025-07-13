@@ -1,7 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuiz } from "../context/QuizContext";
-import { Sparkles, FileText, Settings, Loader2, Image, File, Paperclip, Link as LinkIcon, CheckCircle } from "lucide-react";
+import { Sparkles, FileText, Settings, Loader2, Image, File, Paperclip, Link as LinkIcon, CheckCircle, Info } from "lucide-react";
 import Tesseract from 'tesseract.js';
 
 const API_BASE = process.env.REACT_APP_API_URL || "";
@@ -14,6 +14,8 @@ const QuizGenerator = () => {
   const [numOptions, setNumOptions] = useState("");
   const [loading, setLoading] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("hin+eng"); // Default to Hindi + English
+  const [languageModelsLoaded, setLanguageModelsLoaded] = useState(false);
   const fileInputRef = useRef(null);
   const pdfInputRef = useRef(null);
   const navigate = useNavigate();
@@ -21,6 +23,33 @@ const QuizGenerator = () => {
   const [shareModal, setShareModal] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // Preload language models for better performance
+  useEffect(() => {
+    const preloadLanguages = async () => {
+      try {
+        console.log('Preloading language models...');
+        await Tesseract.createWorker('hin+eng');
+        setLanguageModelsLoaded(true);
+        console.log('Language models loaded successfully!');
+      } catch (error) {
+        console.error('Error preloading language models:', error);
+        // Continue anyway, models will load on first use
+      }
+    };
+    preloadLanguages();
+  }, []);
+
+  // Function to detect text language
+  const detectTextLanguage = (text) => {
+    const hasHindi = /[\u0900-\u097F]/.test(text);
+    const hasEnglish = /[a-zA-Z]/.test(text);
+    
+    if (hasHindi && hasEnglish) return 'multilingual';
+    if (hasHindi) return 'hindi';
+    if (hasEnglish) return 'english';
+    return 'unknown';
+  };
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -136,11 +165,27 @@ const QuizGenerator = () => {
         throw new Error('Failed to extract text from PDF');
       }
 
-      const { text } = await response.json();
+      const { text, languageInfo } = await response.json();
+      
+      // Show language detection feedback
+      if (languageInfo) {
+        let languageMsg = 'Text extracted successfully! ';
+        if (languageInfo.isMultilingual) {
+          languageMsg += '✅ Hindi + English text detected';
+        } else if (languageInfo.hasHindi) {
+          languageMsg += '✅ Hindi text detected';
+        } else if (languageInfo.hasEnglish) {
+          languageMsg += '✅ English text detected';
+        }
+        
+        // Show a brief notification (you can replace this with a proper toast notification)
+        console.log(languageMsg);
+      }
+      
       setInputText((prev) => prev ? `${prev}\n\n${text}` : text);
     } catch (error) {
       console.error("Error extracting text from PDF:", error);
-      alert("Failed to extract text from PDF. Please try another PDF.");
+      alert("Failed to extract text from PDF. Please try another PDF or ensure the text is clear and readable.");
     } finally {
       setFileLoading(false);
     }
@@ -153,16 +198,46 @@ const QuizGenerator = () => {
 
     setFileLoading(true);
     try {
+      // Use selected language for better text recognition
       const result = await Tesseract.recognize(
         file,
-        'eng',
-        { logger: m => console.log(m) }
+        selectedLanguage, // Use selected language
+        { 
+          logger: m => console.log(m),
+          // Additional options for better accuracy
+          tessedit_char_whitelist: selectedLanguage.includes('hin') 
+            ? '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzअआइईउऊएऐओऔकखगघङचछजझञटठडढणतथदधनपफबभमयरलवशषसहक्षत्रज्ञड़ढ़।,?!:;()[]{}"\'-_+=@#$%^&*~`|\\/<>'
+            : '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,?!:;()[]{}"\'-_+=@#$%^&*~`|\\/<>',
+          preserve_interword_spaces: '1'
+        }
       );
 
-      setInputText((prev) => prev ? `${prev}\n\n${result.data.text}` : result.data.text);
+      const extractedText = result.data.text;
+      const detectedLanguage = detectTextLanguage(extractedText);
+      
+      // Provide feedback about extraction
+      let feedbackMsg = 'Text extracted successfully! ';
+      if (detectedLanguage === 'multilingual') {
+        feedbackMsg += '✅ Hindi + English text detected';
+      } else if (detectedLanguage === 'hindi') {
+        feedbackMsg += '✅ Hindi text detected';
+      } else if (detectedLanguage === 'english') {
+        feedbackMsg += '✅ English text detected';
+      } else {
+        feedbackMsg += '⚠️ No recognizable text detected';
+      }
+      
+      console.log(feedbackMsg);
+      console.log('Extracted text length:', extractedText.length);
+      
+      if (extractedText.trim().length < 10) {
+        alert('Warning: Very little text was extracted. Please ensure the image has clear, readable text.');
+      }
+
+      setInputText((prev) => prev ? `${prev}\n\n${extractedText}` : extractedText);
     } catch (error) {
       console.error("Error extracting text from image:", error);
-      alert("Failed to extract text from image. Please try another image.");
+      alert("Failed to extract text from image. Please try another image or ensure the text is clear and readable.");
     } finally {
       setFileLoading(false);
     }
@@ -230,7 +305,7 @@ const QuizGenerator = () => {
 
         {/* File Upload Section */}
         <div className="mb-6">
-          <div className="flex justify-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-4 mb-4">
             <button
               type="button"
               onClick={() => triggerFileUpload('image')}
@@ -247,6 +322,29 @@ const QuizGenerator = () => {
               <File size={20} />
               Upload PDF
             </button>
+          </div>
+
+          {/* Language Selector for Image OCR */}
+          <div className="flex justify-center mb-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Language for Image OCR:</label>
+              <select
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                <option value="hin+eng">Hindi + English (Recommended)</option>
+                <option value="hin">Hindi Only</option>
+                <option value="eng">English Only</option>
+                <option value="hin+eng+dev">Hindi + English + Devanagari</option>
+              </select>
+              {languageModelsLoaded && (
+                <span className="text-xs text-green-600 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" />
+                  Ready
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Hidden file inputs */}
@@ -273,6 +371,20 @@ const QuizGenerator = () => {
               </div>
             </div>
           )}
+
+          {/* Helpful Tips */}
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+              <Info className="w-4 h-4" />
+              Tips for Better Text Extraction
+            </h4>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li>• <strong>Images:</strong> Use high-resolution, well-lit images with clear text</li>
+              <li>• <strong>PDFs:</strong> Ensure text is selectable (not scanned images)</li>
+              <li>• <strong>Hindi Text:</strong> Choose "Hindi + English" for mixed content</li>
+              <li>• <strong>Font Size:</strong> Larger, clear fonts work better for OCR</li>
+            </ul>
+          </div>
         </div>
 
         <form
