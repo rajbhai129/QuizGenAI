@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Menu, X, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
@@ -8,6 +8,21 @@ const Navbar = () => {
   const [dropdown, setDropdown] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -38,7 +53,7 @@ const Navbar = () => {
         {/* User Section */}
         <div className="hidden md:flex items-center gap-4 relative">
           {user ? (
-            <div className="flex items-center gap-2 relative">
+            <div className="flex items-center gap-2 relative" ref={dropdownRef}>
               <button
                 className="flex items-center gap-2 focus:outline-none group"
                 onClick={() => setDropdown((d) => !d)}

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuiz } from '../context/QuizContext';
-import { Plus, Trash2, Save, Link as LinkIcon, CheckCircle, Info, Eye } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Plus, Trash2, Save, Link as LinkIcon, CheckCircle, Info, Eye, FileText } from 'lucide-react';
 
 const ManualQuizCreator = () => {
   const [questions, setQuestions] = useState([{
@@ -13,10 +14,12 @@ const ManualQuizCreator = () => {
   }]);
   const navigate = useNavigate();
   const { setQuizData, fetchQuizHistory } = useQuiz();
+  const { user } = useAuth();
   const [shareModal, setShareModal] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [copied, setCopied] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [guestLimitModal, setGuestLimitModal] = useState(false);
 
   const addQuestion = () => {
     setQuestions([...questions, {
@@ -98,7 +101,11 @@ const ManualQuizCreator = () => {
         throw new Error(data.error || 'Failed to create quiz');
       }
     } catch (error) {
-      alert('Failed to save quiz');
+      if (error.message && error.message.includes('Guest account can only create 2 quizzes')) {
+        setGuestLimitModal(true);
+      } else {
+        alert('Failed to save quiz: ' + error.message);
+      }
     }
   };
 
@@ -183,11 +190,71 @@ const ManualQuizCreator = () => {
       )}
       {/* Preview Modal */}
       {showPreview && <PreviewModal />}
+      
+      {/* Guest Limit Modal */}
+      {guestLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center border-2 border-orange-200">
+            <div className="bg-orange-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <FileText className="text-orange-600" size={32} />
+            </div>
+            <h2 className="text-2xl font-bold mb-2 text-gray-800">Quiz Limit Reached! 🎯</h2>
+            <p className="mb-6 text-gray-600">You've created 2 quizzes as a guest. Register now for unlimited access!</p>
+            
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setGuestLimitModal(false);
+                  navigate('/register');
+                }}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-6 rounded-xl hover:scale-105 transition-all duration-200 shadow-lg"
+              >
+                🚀 Register for Unlimited Access
+              </button>
+              
+              <button
+                onClick={() => {
+                  setGuestLimitModal(false);
+                  navigate('/login');
+                }}
+                className="w-full bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-gray-700 transition"
+              >
+                🔐 Login to Existing Account
+              </button>
+              
+              <button
+                onClick={() => setGuestLimitModal(false)}
+                className="w-full text-gray-500 hover:text-gray-700 transition"
+              >
+                Maybe Later
+              </button>
+            </div>
+            
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-700">
+                💡 <strong>Benefits of registering:</strong><br/>
+                • Unlimited quiz creation<br/>
+                • Save quiz history<br/>
+                • Analytics & insights<br/>
+                • Custom profile
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-3xl mx-auto relative z-10">
         <div className="bg-white/90 rounded-3xl shadow-2xl p-10 border-t-4 border-pink-400 backdrop-blur-md mb-10">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-extrabold text-gray-800 drop-shadow mb-2">Manual Quiz Creator</h1>
             <p className="text-lg text-gray-600">Design your own quiz step by step. Add questions, set correct answers, and preview before sharing!</p>
+            {user?.email === 'guest@quizgenai.com' && (
+              <div className="mt-4 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-700">
+                  🎯 Guest Mode: You can create 2 quizzes. Register for unlimited access!
+                </p>
+              </div>
+            )}
           </div>
           <Stepper />
           {questions.map((question, qIndex) => (

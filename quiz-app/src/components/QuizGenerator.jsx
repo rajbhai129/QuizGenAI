@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuiz } from "../context/QuizContext";
+import { useAuth } from "../context/AuthContext";
 import { Sparkles, FileText, Settings, Loader2, Image, File, Paperclip, Link as LinkIcon, CheckCircle, Info } from "lucide-react";
 import Tesseract from 'tesseract.js';
 
@@ -20,9 +21,11 @@ const QuizGenerator = () => {
   const pdfInputRef = useRef(null);
   const navigate = useNavigate();
   const { setQuizData, fetchQuizHistory } = useQuiz();
+  const { user } = useAuth();
   const [shareModal, setShareModal] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [copied, setCopied] = useState(false);
+  const [guestLimitModal, setGuestLimitModal] = useState(false);
 
   // Preload language models for better performance
   useEffect(() => {
@@ -66,6 +69,10 @@ const QuizGenerator = () => {
 
       if (single + multiple !== total) {
         throw new Error('Single + Multiple correct questions must equal Total questions');
+      }
+
+      if (single < 0 || multiple < 0) {
+        throw new Error('Question counts cannot be negative');
       }
 
       if (options < 2) {
@@ -135,6 +142,8 @@ const QuizGenerator = () => {
       if (err.response?.status === 401) {
         alert("Please login to generate quiz");
         navigate('/login');
+      } else if (err.message && err.message.includes('Guest account can only create 2 quizzes')) {
+        setGuestLimitModal(true);
       } else {
         alert(err.message || "Failed to generate quiz. Please try again.");
       }
@@ -290,6 +299,56 @@ const QuizGenerator = () => {
           </div>
         </div>
       )}
+      {guestLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center border-2 border-orange-200">
+            <div className="bg-orange-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <FileText className="text-orange-600" size={32} />
+            </div>
+            <h2 className="text-2xl font-bold mb-2 text-gray-800">Quiz Limit Reached! 🎯</h2>
+            <p className="mb-6 text-gray-600">You've created 2 quizzes as a guest. Register now for unlimited access!</p>
+            
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setGuestLimitModal(false);
+                  navigate('/register');
+                }}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 px-6 rounded-xl hover:scale-105 transition-all duration-200 shadow-lg"
+              >
+                🚀 Register for Unlimited Access
+              </button>
+              
+              <button
+                onClick={() => {
+                  setGuestLimitModal(false);
+                  navigate('/login');
+                }}
+                className="w-full bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-gray-700 transition"
+              >
+                🔐 Login to Existing Account
+              </button>
+              
+              <button
+                onClick={() => setGuestLimitModal(false)}
+                className="w-full text-gray-500 hover:text-gray-700 transition"
+              >
+                Maybe Later
+              </button>
+            </div>
+            
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-700">
+                💡 <strong>Benefits of registering:</strong><br/>
+                • Unlimited quiz creation<br/>
+                • Save quiz history<br/>
+                • Analytics & insights<br/>
+                • Custom profile
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="w-full max-w-3xl bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-10 relative overflow-hidden border border-white">
         <div className="absolute top-0 right-0 w-32 h-32 bg-pink-300 rounded-full blur-3xl opacity-30 animate-pulse"></div>
         <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-400 rounded-full blur-2xl opacity-20 animate-pulse"></div>
@@ -301,6 +360,13 @@ const QuizGenerator = () => {
           <p className="text-gray-600 mt-2 text-lg">
             Upload content or paste text below to create your quiz instantly!
           </p>
+          {user?.email === 'guest@quizgenai.com' && (
+            <div className="mt-4 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-700">
+                🎯 Guest Mode: You can create 2 quizzes. Register for unlimited access!
+              </p>
+            </div>
+          )}
         </div>
 
         {/* File Upload Section */}
