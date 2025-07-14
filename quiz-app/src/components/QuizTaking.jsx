@@ -138,75 +138,139 @@ const QuizTaking = () => {
     }
 
     const currentQ = quizData[currentQuestion];
+
+    // Compute status for each question
+    const getStatus = (idx) => {
+      if (currentQuestion === idx) return 'current';
+      if (answers[idx] && answers[idx].length > 0) return 'attempted';
+      return 'not_attempted';
+    };
+
+    // Sidebar/Topbar navigator
+    const QuestionNavigator = () => (
+      <>
+        {/* Desktop: vertical sidebar */}
+        <div className="hidden md:flex flex-col gap-2 items-center py-6 px-2 bg-white/80 rounded-2xl shadow-lg border border-blue-100 mr-8 min-w-[64px] sticky top-8 h-fit max-h-[80vh] overflow-y-auto">
+          {quizData.map((_, idx) => {
+            const status = getStatus(idx);
+            let base = 'w-10 h-10 flex items-center justify-center rounded-full font-bold text-lg cursor-pointer border-2 transition-all duration-200 mb-1';
+            let color = '';
+            if (status === 'current') color = 'border-blue-500 bg-blue-100 text-blue-700 scale-110 shadow-lg';
+            else if (status === 'attempted') color = 'border-green-500 bg-green-100 text-green-700';
+            else color = 'border-gray-300 bg-gray-100 text-gray-400';
+            return (
+              <div
+                key={idx}
+                className={`${base} ${color}`}
+                title={status === 'current' ? 'Current' : status === 'attempted' ? 'Attempted' : 'Not Attempted'}
+                onClick={() => setCurrentQuestion(idx)}
+              >
+                {idx + 1}
+              </div>
+            );
+          })}
+        </div>
+        {/* Mobile: horizontal bar */}
+        <div className="md:hidden flex gap-2 items-center py-3 px-2 bg-white/80 rounded-xl shadow-lg border border-blue-100 mb-4 overflow-x-auto sticky top-2 z-10">
+          {quizData.map((_, idx) => {
+            const status = getStatus(idx);
+            let base = 'w-9 h-9 flex items-center justify-center rounded-full font-bold text-base cursor-pointer border-2 transition-all duration-200';
+            let color = '';
+            if (status === 'current') color = 'border-blue-500 bg-blue-100 text-blue-700 scale-110 shadow-lg';
+            else if (status === 'attempted') color = 'border-green-500 bg-green-100 text-green-700';
+            else color = 'border-gray-300 bg-gray-100 text-gray-400';
+            return (
+              <div
+                key={idx}
+                className={`${base} ${color}`}
+                title={status === 'current' ? 'Current' : status === 'attempted' ? 'Attempted' : 'Not Attempted'}
+                onClick={() => setCurrentQuestion(idx)}
+              >
+                {idx + 1}
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 flex items-center justify-center px-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full border border-blue-100">
-          {/* Progress Bar */}
-          <div className="mb-6">
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Question {currentQuestion + 1} of {quizData.length}</span>
-              <span>{Math.round(((currentQuestion + 1) / quizData.length) * 100)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${((currentQuestion + 1) / quizData.length) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-
-          {/* Question */}
-          <h2 className="text-xl font-semibold mb-6 text-gray-800">
-            {currentQuestion + 1}. {currentQ.question}
-          </h2>
-
-          {/* Options */}
-          <div className="space-y-3 mb-8">
-            {currentQ.options.map((option, optIdx) => (
-              <label key={optIdx} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
-                <input
-                  type={currentQ.type === 'single' ? 'radio' : 'checkbox'}
-                  name={`q-${currentQuestion}`}
-                  checked={answers[currentQuestion]?.includes(optIdx) || false}
-                  onChange={() => handleOptionChange(currentQuestion, optIdx, currentQ.type)}
-                  className="w-4 h-4 accent-blue-600"
-                />
-                <span className="flex-1">{option}</span>
-              </label>
-            ))}
-          </div>
-
-          {/* Navigation */}
-          <div className="flex justify-between items-center">
-            <button
-              onClick={prevQuestion}
-              disabled={currentQuestion === 0}
-              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            
-            <div className="text-sm text-gray-600">
-              {currentQuestion + 1} of {quizData.length}
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 flex items-center justify-center px-2 md:px-4">
+        <div className="flex w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-blue-100 overflow-hidden relative">
+          {/* Sidebar for desktop */}
+          <QuestionNavigator />
+          {/* Main quiz area */}
+          <div className="flex-1 p-6 sm:p-10">
+            {/* Progress Bar */}
+            <div className="mb-6">
+              <div className="flex justify-between text-sm text-gray-600 mb-2">
+                <span>Question {currentQuestion + 1} of {quizData.length}</span>
+                <span>{Math.round(((currentQuestion + 1) / quizData.length) * 100)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${((currentQuestion + 1) / quizData.length) * 100}%` }}
+                ></div>
+              </div>
             </div>
 
-            {currentQuestion === quizData.length - 1 ? (
+            {/* Mobile: show topbar navigator */}
+            <div className="block md:hidden mb-2">
+              {/* Already rendered in QuestionNavigator */}
+            </div>
+
+            {/* Question */}
+            <h2 className="text-xl font-semibold mb-6 text-gray-800">
+              {currentQuestion + 1}. {currentQ.question}
+            </h2>
+
+            {/* Options */}
+            <div className="space-y-3 mb-8">
+              {currentQ.options.map((option, optIdx) => (
+                <label key={optIdx} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                  <input
+                    type={currentQ.type === 'single' ? 'radio' : 'checkbox'}
+                    name={`q-${currentQuestion}`}
+                    checked={answers[currentQuestion]?.includes(optIdx) || false}
+                    onChange={() => handleOptionChange(currentQuestion, optIdx, currentQ.type)}
+                    className="w-4 h-4 accent-blue-600"
+                  />
+                  <span className="flex-1">{option}</span>
+                </label>
+              ))}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
               <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2 disabled:opacity-50"
+                onClick={prevQuestion}
+                disabled={currentQuestion === 0}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
               >
-                {submitting ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
-                Submit Quiz
+                Previous
               </button>
-            ) : (
-              <button
-                onClick={nextQuestion}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              >
-                Next
-              </button>
-            )}
+              <div className="text-sm text-gray-600">
+                {currentQuestion + 1} of {quizData.length}
+              </div>
+              {currentQuestion === quizData.length - 1 ? (
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2 disabled:opacity-50 w-full sm:w-auto"
+                >
+                  {submitting ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
+                  Submit Quiz
+                </button>
+              ) : (
+                <button
+                  onClick={nextQuestion}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition w-full sm:w-auto"
+                >
+                  Next
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
