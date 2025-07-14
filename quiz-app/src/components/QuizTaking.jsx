@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuiz } from '../context/QuizContext';
 import { useAuth } from '../context/AuthContext';
 import { Search, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 
 const QuizTaking = () => {
   const [quizId, setQuizId] = useState('');
@@ -14,6 +15,16 @@ const QuizTaking = () => {
   const navigate = useNavigate();
   const { quizData, setUserAnswers, resetQuiz } = useQuiz();
   const { user } = useAuth();
+  // Generate or retrieve a quizId for the current quiz session
+  const [sessionQuizId, setSessionQuizId] = useState(() => {
+    // Try to get from quizData, else from sessionStorage, else generate
+    if (quizData && quizData.quizId) return quizData.quizId;
+    const stored = sessionStorage.getItem('currentQuizId');
+    if (stored) return stored;
+    const newId = uuidv4();
+    sessionStorage.setItem('currentQuizId', newId);
+    return newId;
+  });
 
   // Initialize answers when quizData changes
   useEffect(() => {
@@ -82,6 +93,10 @@ const QuizTaking = () => {
     setUserAnswers(answers);
     setShowResults(true);
     setSubmitting(false);
+    // Store result in localStorage with quizId
+    if (sessionQuizId) {
+      localStorage.setItem(`quizResult_${sessionQuizId}`, JSON.stringify({ score, correctAnswers, incorrectAnswers, details }));
+    }
   };
 
   const nextQuestion = () => {
@@ -97,8 +112,16 @@ const QuizTaking = () => {
   };
 
   const finishQuiz = () => {
-    navigate('/result');
+    // Pass quizId to result page
+    navigate(`/result/${sessionQuizId}`);
   };
+
+  // When starting a new quiz, clear session quizId and result
+  useEffect(() => {
+    if (!quizData || quizData.length === 0) {
+      sessionStorage.removeItem('currentQuizId');
+    }
+  }, [quizData]);
 
   // If we have quiz data, show the quiz
   if (quizData && quizData.length > 0) {

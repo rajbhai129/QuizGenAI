@@ -1,30 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useQuiz } from '../context/QuizContext';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, AlignmentType } from 'docx';
 import { Download } from 'lucide-react';
 
 const QuizResult = () => {
+  const { quizId } = useParams();
   const { quizData, userAnswers, fetchQuizHistory, sharedQuizResult, sharedQuizMeta, setSharedQuizResult, setSharedQuizMeta } = useQuiz();
   const navigate = useNavigate();
   const [userName, setUserName] = useState('');
+  const [notFound, setNotFound] = useState(false);
 
   // Load from localStorage if context is empty
   useEffect(() => {
-    if (!sharedQuizResult) {
-      const storedResult = localStorage.getItem('sharedQuizResult');
+    if (quizId) {
+      const storedResult = localStorage.getItem(`quizResult_${quizId}`);
       if (storedResult) {
         setSharedQuizResult(JSON.parse(storedResult));
+      } else {
+        setNotFound(true);
       }
     }
-    if (!sharedQuizMeta) {
-      const storedMeta = localStorage.getItem('sharedQuizMeta');
-      if (storedMeta) {
-        setSharedQuizMeta(JSON.parse(storedMeta));
-      }
-    }
-  }, [sharedQuizResult, sharedQuizMeta, setSharedQuizResult, setSharedQuizMeta]);
+  }, [sharedQuizResult, sharedQuizMeta, setSharedQuizResult, setSharedQuizMeta, quizId]);
 
   useEffect(() => {
     if (quizData && quizData.length > 0) {
@@ -161,6 +159,20 @@ const QuizResult = () => {
             Back to Home
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div className="p-6 max-w-3xl mx-auto text-center">
+        <h2 className="text-xl font-semibold mb-4 text-red-600">No result found for this quiz!</h2>
+        <button
+          onClick={() => navigate("/")}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Back to Home
+        </button>
       </div>
     );
   }

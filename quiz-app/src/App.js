@@ -73,6 +73,7 @@ function App() {
                   } 
                 />
                 <Route path="/result" element={<QuizResult />} />
+                <Route path="/result/:quizId" element={<QuizResult />} />
                 <Route 
                   path="/profile" 
                   element={
