@@ -1,9 +1,10 @@
-import fetch from "node-fetch";
-
 const HF_API_KEY = process.env.HF_API_KEY;
 const HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
 
 export async function generateQuizWithHuggingFace(prompt) {
+  // Dynamically import node-fetch to resolve ERR_REQUIRE_ESM
+  const fetch = (await import('node-fetch')).default;
+
   if (!HF_API_KEY) {
     throw new Error("Hugging Face API key not configured.");
   }
