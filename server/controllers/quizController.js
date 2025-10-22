@@ -1,6 +1,8 @@
 const axios = require("axios");
 const User = require('../models/User');
 const Quiz = require('../models/Quiz');
+const { generateQuizWithHuggingFace } = require('../utils/huggingFaceApi');
+const { chunkText } = require('../utils/textChunker'); // New import
 
 const generateQuiz = async (req, res) => {
   try {
@@ -19,113 +21,101 @@ const generateQuiz = async (req, res) => {
       return res.status(400).json({ error: "Missing or invalid input fields" });
     }
 
-    // Construct a clearer prompt
-    const prompt = `You are a Quiz Generator AI. Create a quiz following these EXACT requirements:
+    const textChunks = chunkText(content.trim(), 1500); // Chunk size for LLM context, adjust as needed
+    let allGeneratedQuizzes = [];
 
-CONTENT TO USE:
-${content.trim()}
+    // Calculate questions per chunk
+    const questionsPerChunk = Math.ceil(totalQuestions / textChunks.length);
+    let singleCorrectRemaining = singleCorrect;
+    let multipleCorrectRemaining = multipleCorrect;
 
-REQUIREMENTS:
-1. Generate EXACTLY ${totalQuestions} questions total
-2. First ${singleCorrect} questions must be SINGLE correct type
-3. Last ${multipleCorrect} questions must be MULTIPLE correct type
-4. Each question must have EXACTLY ${optionsPerQuestion} options
-5. Label options as a), b), c), etc.
-6. Multiple-choice questions must have 2 or more correct answers
-7. Respond ONLY in JSON format
+    for (let i = 0; i < textChunks.length; i++) {
+      const chunk = textChunks[i];
+      let currentChunkSingle = 0;
+      let currentChunkMultiple = 0;
+      let currentChunkTotal = 0;
 
-Output the quiz as a JSON array of objects with the following structure:
-[
-  {
-    "question": "Question text",
-    "type": "single", // or "multiple"
-    "options": ["Option 1", "Option 2", "Option 3", ...],
-    "correctAnswers": [0] // or [0, 2] for multiple correct (indices of correct options)
-  },
-  ...
-]
+      // Distribute single and multiple correct questions
+      if (singleCorrectRemaining > 0) {
+        currentChunkSingle = Math.min(questionsPerChunk, singleCorrectRemaining);
+        singleCorrectRemaining -= currentChunkSingle;
+      }
+      if (multipleCorrectRemaining > 0) {
+        currentChunkMultiple = Math.min(questionsPerChunk, multipleCorrectRemaining);
+        multipleCorrectRemaining -= currentChunkMultiple;
+      }
+      currentChunkTotal = currentChunkSingle + currentChunkMultiple;
 
-STRICT RULES:
-- Generate exactly ${totalQuestions} questions
-- Include exactly ${optionsPerQuestion} options per question
-- Use zero-based indices for correctAnswers
-- No extra text outside the JSON
-
-Generate the quiz now:`;
-
-    // Make API call with retry logic
-    let attempt = 0;
-    let maxAttempts = 3;
-    let quizArray = [];
-
-    while (attempt < maxAttempts && quizArray.length !== totalQuestions) {
-      try {
-        const response = await axios.post(
-          "https://api.together.xyz/v1/chat/completions", // Changed to chat completions endpoint for JSON mode
-          {
-            model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-            messages: [
-              {
-                "role": "system",
-                "content": "Only respond in JSON format."
-              },
-              {
-                "role": "user",
-                "content": prompt
-              }
-            ],
-            response_format: {
-              "type": "json_object"
-            },
-            max_tokens: 2000,
-            temperature: 0.7,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        const text = response.data.choices[0].message.content;
-        console.log('Raw AI Response:', text); // Debug log
-        
-        // Parse JSON response directly
-        quizArray = JSON.parse(text);
-        
-        // Validate quiz structure
-        if (validateQuizStructure(quizArray, totalQuestions, singleCorrect, multipleCorrect, optionsPerQuestion)) {
-          // Save quiz to user's history
-          const user = await User.findById(req.user._id);
-          user.quizHistory.push({
-            quizId: Date.now().toString(),
-            totalQuestions: totalQuestions,
-            details: quizArray,
-            type: 'created',
-            date: new Date()
-          });
-          await user.save();
-          break;
-        } else {
-          throw new Error('Quiz validation failed');
+      if (currentChunkTotal === 0 && (singleCorrectRemaining > 0 || multipleCorrectRemaining > 0)) {
+        // If we still need questions but this chunk didn't get any, assign remaining proportionally
+        if (singleCorrectRemaining > 0) {
+          currentChunkSingle = singleCorrectRemaining;
+          singleCorrectRemaining = 0;
         }
-      } catch (error) {
-        console.log(`Attempt ${attempt + 1} failed:`, error.message);
-        attempt++;
-        if (attempt === maxAttempts) {
-          throw new Error(`Failed to generate valid quiz after ${maxAttempts} attempts`);
+        if (multipleCorrectRemaining > 0) {
+          currentChunkMultiple = multipleCorrectRemaining;
+          multipleCorrectRemaining = 0;
+        }
+        currentChunkTotal = currentChunkSingle + currentChunkMultiple;
+      }
+
+
+      if (currentChunkTotal === 0) {
+        continue; // Skip if no questions are assigned to this chunk
+      }
+      
+      const prompt = `You are a Quiz Generator AI. Create a quiz following these EXACT requirements:\r\n\r\nCONTENT TO USE:\r\n${chunk}\r\n\r\nREQUIREMENTS:\r\n1. Generate EXACTLY ${currentChunkTotal} questions total\r\n2. ${currentChunkSingle > 0 ? `First ${currentChunkSingle} questions must be SINGLE correct type\r\n` : ''}${currentChunkMultiple > 0 ? `Last ${currentChunkMultiple} questions must be MULTIPLE correct type\r\n` : ''}3. Each question must have EXACTLY ${optionsPerQuestion} options\r\n4. Label options as a), b), c), etc.\r\n5. Multiple-choice questions must have 2 or more correct answers\r\n6. Respond ONLY in JSON format\r\n\r\nOutput the quiz as a JSON array of objects with the following structure:\r\n[\r\n  {\r\n    \"question\": \"Question text\",\r\n    \"type\": \"single\", // or \"multiple\"\r\n    \"options\": [\"Option 1\", \"Option 2\", \"Option 3\", ...],\r\n    \"correctAnswers\": [0] // or [0, 2] for multiple correct (indices of correct options)\r\n  },\r\n  ...\r\n]\r\n\r\nSTRICT RULES:\r\n- Generate exactly ${currentChunkTotal} questions\r\n- Include exactly ${optionsPerQuestion} options per question\r\n- Use zero-based indices for correctAnswers\r\n- No extra text outside the JSON\r\n\r\nGenerate the quiz now:`;
+      
+      let attempt = 0;
+      let maxAttempts = 3;
+      let chunkQuizArray = [];
+
+      while (attempt < maxAttempts) {
+        try {
+          const generatedText = await generateQuizWithHuggingFace(prompt);
+          console.log(`Raw AI Response (Hugging Face) for chunk ${i + 1}:`, generatedText);
+          
+          chunkQuizArray = JSON.parse(generatedText);
+          
+          if (validateQuizStructure(chunkQuizArray, currentChunkTotal, currentChunkSingle, currentChunkMultiple, optionsPerQuestion)) {
+            allGeneratedQuizzes.push(...chunkQuizArray);
+            break; // Exit retry loop for this chunk
+          } else {
+            throw new Error('Quiz validation failed for chunk');
+          }
+        } catch (error) {
+          console.log(`Attempt ${attempt + 1} for chunk ${i + 1} failed:`, error.message);
+          attempt++;
+          if (attempt === maxAttempts) {
+            throw new Error(`Failed to generate valid quiz for chunk ${i + 1} after ${maxAttempts} attempts`);
+          }
         }
       }
     }
 
-    res.status(200).json({ quiz: quizArray });
+    // After all chunks, validate the combined quiz
+    if (!validateQuizStructure(allGeneratedQuizzes, totalQuestions, singleCorrect, multipleCorrect, optionsPerQuestion)) {
+      throw new Error('Final combined quiz failed validation.');
+    }
+
+    // Save quiz to user's history
+    const user = await User.findById(req.user._id);
+    user.quizHistory.push({
+      quizId: Date.now().toString(),
+      totalQuestions: totalQuestions,
+      details: allGeneratedQuizzes,
+      type: 'created',
+      date: new Date()
+    });
+    await user.save();
+
+    res.status(200).json({ quiz: allGeneratedQuizzes });
   } catch (error) {
     console.error("Error generating quiz:", error);
     res.status(500).json({ 
       error: "Failed to generate quiz",
       details: error.message,
-      attempts: error.attempts
+      attempts: error.attempts // This might not be accurate with chunking, consider refining
     });
   }
 };
