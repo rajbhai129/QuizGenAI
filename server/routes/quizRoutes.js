@@ -9,7 +9,7 @@ const {
 } = require('../controllers/quizController');
 const { protect } = require('../middleware/auth');
 
-router.post('/generate', protect, generateQuiz);
+router.post('/generate', generateQuiz); // Temporarily removed 'protect'
 
 // Shared quiz routes
 router.post('/create', protect, createSharedQuiz);
