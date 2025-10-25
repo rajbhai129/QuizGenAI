@@ -1,5 +1,5 @@
 const HF_API_KEY = process.env.HF_API_KEY;
-const HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
+const HF_API_URL = "https://router.huggingface.co/v1/chat/completions"; // Updated URL
 
 export async function generateQuizWithHuggingFace(prompt) {
   // Dynamically import node-fetch to resolve ERR_REQUIRE_ESM
@@ -17,10 +17,16 @@ export async function generateQuizWithHuggingFace(prompt) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        inputs: prompt,
-        parameters: {
-          max_new_tokens: 512,
-        },
+        messages: [ // Changed to messages array
+          {
+            "role": "user",
+            "content": prompt,
+          },
+        ],
+        model: "mistralai/Mistral-7B-Instruct-v0.2:featherless-ai", // Added model to body
+        stream: false, // Added stream parameter
+        max_tokens: 2000, // Keep max_tokens to prevent very long responses or timeouts
+        temperature: 0.7, // Add temperature as used in together.xyz call
       }),
     });
 
@@ -32,9 +38,9 @@ export async function generateQuizWithHuggingFace(prompt) {
     }
 
     const data = await response.json();
-    // Assuming the output format is data[0].generated_text as per your example
-    if (data && data.length > 0 && data[0].generated_text) {
-      return data[0].generated_text;
+    // For chat completions, the generated text is in data.choices[0].message.content
+    if (data && data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
+      return data.choices[0].message.content;
     } else {
       throw new Error("Invalid response format from Hugging Face API.");
     }
